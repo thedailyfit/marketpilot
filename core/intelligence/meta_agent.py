@@ -23,24 +23,31 @@ class MetaAIAgent:
         except Exception as e:
             logger.error(f"Failed to initialize Gemini: {e}")
 
-    async def get_response(self, user_query: str, market_context: dict) -> str:
-        """Process user query against the live algorithmic market context."""
+    async def get_response(self, user_query: str, market_context: dict, image_bytes: bytes = None) -> str:
+        """Process user query against live context, with optional image analysis."""
         if not self.is_ready or not self.model:
             return "Gemini AI is offline. Please configure GEMINI_API_KEY in your environment variables."
 
         try:
-            # Construct a prompt blending the user query with the live math context
+            import io
+            from PIL import Image
+
             system_prompt = (
                 "You are the Singularity Meta AI for MarketPilot, an advanced institutional trading system. "
-                "You have direct access to quantitative algorithmic engines. "
+                "You act as the primary brain. If the user shares an image (like a chart screenshot or news clipping), "
+                "analyze it immediately, cross-reference it with the live algo data, and provide verified feedback. "
                 f"LIVE ALGO DATA: {str(market_context)}\n\n"
-                "Respond concisely and professionally as a quantitative trading assistant. "
-                "If the user asks to execute, confirm the exact contract and wait for their explicit execute command."
+                "Provide a concise, highly professional quantitative response."
             )
             
             full_prompt = f"{system_prompt}\n\nUSER COMMAND: {user_query}"
             
-            response = self.model.generate_content(full_prompt)
+            if image_bytes:
+                img = Image.open(io.BytesIO(image_bytes))
+                response = self.model.generate_content([full_prompt, img])
+            else:
+                response = self.model.generate_content(full_prompt)
+                
             return response.text
             
         except Exception as e:

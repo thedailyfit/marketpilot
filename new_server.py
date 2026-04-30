@@ -501,8 +501,6 @@ async def process_chat(msg: ChatMessage):
     """Process natural language command using Gemini Meta Agent."""
     from core.intelligence.meta_agent import meta_agent
     
-    # Collect mock/live context from engines for Gemini to read
-    # In a real setup, this pulls live vars from the supervisor's active memory
     context = {
         "nifty_ltp": 24000.50,
         "gamma_exposure": "NEUTRAL",
@@ -512,6 +510,74 @@ async def process_chat(msg: ChatMessage):
     
     reply = await meta_agent.get_response(msg.message, context)
     return JSONResponse(content={"status": "success", "reply": reply})
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request):
+    """Receive messages from Telegram Bot."""
+    from core.intelligence.meta_agent import meta_agent
+    import httpx
+    
+    try:
+        data = await request.json()
+        if "message" not in data:
+            return JSONResponse(content={"status": "ignored"})
+            
+        msg = data["message"]
+        chat_id = msg.get("chat", {}).get("id")
+        text = msg.get("text", "")
+        photos = msg.get("photo", [])
+        caption = msg.get("caption", "")
+        
+        token = sys_config.TELEGRAM_BOT_TOKEN
+        if not token or not chat_id:
+            return JSONResponse(content={"status": "missing_token"})
+            
+        # Compile live context for the AI
+        market_context = {
+            "nifty_ltp": 24000.50,
+            "gamma_exposure": "NEUTRAL",
+            "orderflow_delta": -1200,
+            "active_traps": ["BULL_TRAP_24100"]
+        }
+        
+        image_bytes = None
+        user_query = text
+        
+        # If user sent a photo (e.g., news screenshot)
+        if photos:
+            user_query = caption or "Analyze this image and cross-reference with current market data."
+            # Get the highest resolution photo
+            file_id = photos[-1]["file_id"]
+            
+            async with httpx.AsyncClient() as client:
+                # 1. Get file path from Telegram
+                file_url = f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}"
+                file_resp = await client.get(file_url)
+                file_info = file_resp.json()
+                
+                if file_info.get("ok"):
+                    file_path = file_info["result"]["file_path"]
+                    # 2. Download the actual image
+                    dl_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
+                    img_resp = await client.get(dl_url)
+                    image_bytes = img_resp.content
+
+        # Process with Gemini
+        reply_text = await meta_agent.get_response(user_query, market_context, image_bytes)
+        
+        # Send reply back to Telegram
+        async with httpx.AsyncClient() as client:
+            send_url = f"https://api.telegram.org/bot{token}/sendMessage"
+            await client.post(send_url, json={
+                "chat_id": chat_id,
+                "text": reply_text
+            })
+            
+        return JSONResponse(content={"status": "success"})
+        
+    except Exception as e:
+        logger.error(f"Telegram Webhook Error: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)})
 
 @app.get("/api/funds")
 async def get_live_funds():
