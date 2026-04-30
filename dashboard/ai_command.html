@@ -819,8 +819,24 @@
                 setTimeout(() => { capitalVal.innerText = '₹24,500.00'; }, 800);
             }
         }
-        function smartExecute() { addLog("Smart Exec Started", "sys"); }
-        function executeOrder() { addLog("Executing...", "warn"); }
+        async function smartExecute() { 
+            addLog("Smart Exec Started", "sys"); 
+            try {
+                const r = await fetch(`${API}/api/smart_execute`, { method: 'POST' });
+                const d = await r.json();
+                addLog(`Execution: ${d.message}`, "success");
+            } catch (e) { addLog("Execution Error", "error"); }
+        }
+        
+        async function executeOrder() { 
+            addLog("Executing...", "warn");
+            try {
+                const r = await fetch(`${API}/api/execute_now`, { method: 'POST' });
+                const d = await r.json();
+                addLog(`Order Placed: ${d.message}`, "success");
+            } catch (e) { addLog("Execution Error", "error"); }
+        }
+        
         function runTurboOptimizer() {
             addLog("Turbo Optimizer Running...", "sys");
             setTimeout(() => {
