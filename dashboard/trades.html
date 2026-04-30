@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TRADES // MARKETPILOT AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            background: #050505;
+            color: #e1e1e1;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-link {
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 255, 157, 0.2);
+            border-left: 3px solid #00ff9d;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex">
+    <!-- SIDEBAR -->
+    <aside class="w-56 glass flex flex-col p-4 gap-2">
+        <h1 class="text-xl font-black italic mb-4">MARKETPILOT<span class="text-[#00ff9d]">AI</span></h1>
+        <a href="/dashboard" class="sidebar-link px-4 py-2 rounded text-sm font-bold">📊 Dashboard</a>
+        <a href="/trades" class="sidebar-link active px-4 py-2 rounded text-sm font-bold">📜 Trade History</a>
+        <a href="/settings" class="sidebar-link px-4 py-2 rounded text-sm font-bold">⚙️ Settings</a>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-6 overflow-auto">
+        <h2 class="text-2xl font-black mb-4 text-white">TRADE HISTORY</h2>
+
+        <!-- FILTER TABS -->
+        <div class="flex gap-2 mb-4">
+            <button onclick="filter('ALL')" id="btn-all"
+                class="px-4 py-2 bg-[#00ff9d] text-black font-bold rounded text-xs">ALL</button>
+            <button onclick="filter('PAPER')" id="btn-paper"
+                class="px-4 py-2 bg-[#222] text-gray-400 font-bold rounded text-xs">PAPER</button>
+            <button onclick="filter('LIVE')" id="btn-live"
+                class="px-4 py-2 bg-[#222] text-gray-400 font-bold rounded text-xs">LIVE</button>
+        </div>
+
+        <!-- TABLE -->
+        <div class="glass rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-black/50 text-gray-400 font-bold uppercase text-xs">
+                    <tr>
+                        <th class="p-3 text-left">Time</th>
+                        <th class="p-3 text-left">Symbol</th>
+                        <th class="p-3 text-left">Action</th>
+                        <th class="p-3 text-right">Qty</th>
+                        <th class="p-3 text-right">Price</th>
+                        <th class="p-3 text-right">P&L</th>
+                        <th class="p-3 text-center">Mode</th>
+                    </tr>
+                </thead>
+                <tbody id="trade-table" class="mono text-xs"></tbody>
+            </table>
+        </div>
+        <p id="empty-msg" class="text-gray-500 text-center mt-6 hidden">No trades yet. Initialize the agent and start
+            trading!</p>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+        let allTrades = [];
+        let currentFilter = 'ALL';
+
+        async function loadTrades() {
+            try {
+                const r = await fetch(`${API}/api/trades`);
+                allTrades = await r.json();
+                render();
+            } catch (e) {
+                console.error("Failed to load trades", e);
+            }
+        }
+
+        function filter(mode) {
+            currentFilter = mode;
+            document.querySelectorAll('[id^=btn-]').forEach(b => b.className = 'px-4 py-2 bg-[#222] text-gray-400 font-bold rounded text-xs');
+            document.getElementById('btn-' + mode.toLowerCase()).className = 'px-4 py-2 bg-[#00ff9d] text-black font-bold rounded text-xs';
+            render();
+        }
+
+        function render() {
+            const filtered = currentFilter === 'ALL' ? allTrades : allTrades.filter(t => t.mode === currentFilter);
+            const tbody = document.getElementById('trade-table');
+            const empty = document.getElementById('empty-msg');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(t => `
+                <tr class="border-t border-white/5 hover:bg-white/5">
+                    <td class="p-3">${t.timestamp || '--'}</td>
+                    <td class="p-3 text-white font-bold">${t.symbol}</td>
+                    <td class="p-3 ${t.action === 'BUY' ? 'text-[#00ff9d]' : 'text-[#ef4444]'} font-bold">${t.action}</td>
+                    <td class="p-3 text-right">${t.quantity}</td>
+                    <td class="p-3 text-right">₹${(t.fill_price || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right ${(t.pnl || 0) >= 0 ? 'text-[#00ff9d]' : 'text-[#ef4444]'}">₹${(t.pnl || 0).toFixed(2)}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-[10px] font-bold ${t.mode === 'LIVE' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}">${t.mode}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        loadTrades();
+        setInterval(loadTrades, 5000);
+    </script>
+</body>
+
+</html>

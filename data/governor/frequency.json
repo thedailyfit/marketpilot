@@ -1,0 +1,17 @@
+{
+  "max_daily": 3,
+  "cooldown_minutes": 0,
+  "trades_today": [
+    {
+      "trade_id": "ORD-1002",
+      "timestamp": 1770466856,
+      "symbol": "BANKNIFTY_AGGRESSIVE",
+      "side": "BUY"
+    }
+  ],
+  "last_trade_time": 1770466856,
+  "daily_history": {
+    "2026-02-07": 1
+  },
+  "date": "2026-02-07"
+}

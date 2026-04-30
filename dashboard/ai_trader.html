@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARKETPILOT PRO // AI COMMAND</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js for Radar/Deep Scan -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --neon-green: #00ff9d;
+            --neon-blue: #00f0ff;
+            --neon-red: #ff0055;
+            --bg-dark: #050505;
+            --glass: rgba(20, 20, 20, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Space Grotesk', sans-serif;
+            color: #fff;
+            overflow: hidden;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 100% 0%, rgba(0, 255, 157, 0.05) 0%, transparent 30%);
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Animations */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(0, 255, 157, 0);
+            }
+
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0);
+            }
+        }
+
+        @keyframes scanline {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: pulse-ring 2s infinite;
+        }
+
+        .offline-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+        }
+
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .glow-green {
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+        }
+
+        .glow-red {
+            text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col p-2 gap-2 grid-bg text-sm">
+
+    <!-- TOP HEADER: SYSTEM STATUS & HUD -->
+    <header class="h-16 flex gap-2 shrink-0">
+        <!-- Logo / Identity -->
+        <div class="w-64 glass-panel rounded-lg flex items-center px-4 gap-3 relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-r from-[var(--neon-green)] to-transparent opacity-5"></div>
+            <div
+                class="w-10 h-10 rounded border border-[var(--neon-green)] flex items-center justify-center bg-[var(--neon-green)]/10">
+                <svg class="w-6 h-6 text-[var(--neon-green)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight leading-none glow-text">MARKET<span
+                        class="text-[var(--neon-green)]">PILOT</span></h1>
+                <div class="text-[9px] text-gray-400 font-mono tracking-widest mt-0.5 flex items-center gap-1">
+                    <span class="live-indicator w-1.5 h-1.5"></span> ONLINE V9.5
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Ticker -->
+        <div class="flex-1 glass-panel rounded-lg flex items-center px-6 justify-between">
+            <div class="flex items-center gap-8">
+                <div>
+                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">NIFTY 50</div>
+                    <div class="text-xl font-bold font-mono tracking-tight" id="ticker-nifty">--.--</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">BANKNIFTY</div>
+                    <div class="text-xl font-bold font-mono tracking-tight" id="ticker-banknifty">--.--</div>
+                </div>
+                <div class="h-8 w-px bg-white/10"></div>
+                <div>
+                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">LATENCY</div>
+                    <div class="text-lg font-bold font-mono text-[var(--neon-blue)]" id="latency-val">12ms</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">VIX</div>
+                    <div class="text-lg font-bold font-mono text-[#f59e0b]" id="vix-val">12.4</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button
+                    class="px-4 py-2 rounded bg-[#0f0f0f] border border-white/10 hover:border-[var(--neon-green)] hover:text-[var(--neon-green)] transition-colors text-xs font-bold">MODE:
+                    PAPER</button>
+                <button
+                    class="px-4 py-2 rounded bg-[var(--neon-green)] text-black font-bold text-xs hover:shadow-[0_0_15px_rgba(0,255,157,0.4)] transition-all">DEEP
+                    SCAN</button>
+            </div>
+        </div>
+
+        <!-- Account Summary -->
+        <div class="w-72 glass-panel rounded-lg flex flex-col justify-center px-5 relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-[var(--neon-green)] opacity-10 blur-3xl rounded-full">
+            </div>
+            <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex justify-between">
+                <span>TOTAL CAPITAL</span>
+                <span class="text-[var(--neon-green)] opacity-80">PAPER</span>
+            </div>
+            <div class="text-2xl font-bold tracking-tighter mt-0.5" id="total-capital">₹1,00,000</div>
+            <div class="flex justify-between mt-1 items-center border-t border-white/5 pt-1">
+                <span class="text-[10px] text-gray-500 font-bold">TODAY'S P&L</span>
+                <span class="text-sm font-bold font-mono text-gray-300" id="daily-pnl">₹0.00</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <main class="flex-1 grid grid-cols-12 gap-2 min-h-0">
+
+        <!-- LEFT: INTELLIGENCE & AGENTS -->
+        <aside class="col-span-3 flex flex-col gap-2">
+            <!-- Active Agents Status -->
+            <div class="glass-panel p-4 rounded-lg flex flex-col gap-3">
+                <div class="flex justify-between items-center mb-1">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Neural Agents</h2>
+                    <span class="text-[10px] font-mono text-[var(--neon-blue)] bg-[var(--neon-blue)]/10 px-1 rounded">5
+                        ACTIVE</span>
+                </div>
+
+                <div class="space-y-2">
+                    <!-- Agent Row -->
+                    <div class="flex items-center gap-3 p-2 bg-white/5 rounded border border-white/5">
+                        <div
+                            class="w-8 h-8 rounded bg-[var(--neon-blue)]/10 flex items-center justify-center text-[var(--neon-blue)]">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-[10px] text-gray-400 font-bold">MARKET DATA</div>
+                            <div class="text-xs font-mono text-[var(--neon-green)] flex items-center gap-1">
+                                STREAMING <span
+                                    class="animate-pulse w-1 h-1 bg-[var(--neon-green)] rounded-full"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 p-2 bg-white/5 rounded border border-white/5">
+                        <div class="w-8 h-8 rounded bg-[#a855f7]/10 flex items-center justify-center text-[#a855f7]">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-[10px] text-gray-400 font-bold">STRATEGY ENGINE</div>
+                            <div class="text-xs font-mono text-[#a855f7]" id="active-strategy">BuyCallScalp</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[9px] text-gray-500">CONF.</div>
+                            <div class="text-xs font-bold text-white">84%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Scan Analysis -->
+            <div class="glass-panel p-4 rounded-lg flex-1 flex flex-col relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Agent Reasoning</h2>
+                    <span class="text-[9px] text-gray-500">LIVE FEED</span>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="agent-logs">
+                    <!-- Dynamic Logs -->
+                    <div class="text-[10px] font-mono text-gray-500 border-l-2 border-gray-700 pl-2">
+                        <span class="text-[var(--neon-blue)]">RiskAgent:</span> Leverage within limits (2.1x)
+                    </div>
+                    <div class="text-[10px] font-mono text-gray-500 border-l-2 border-green-700 pl-2">
+                        <span class="text-[var(--neon-green)]">Signal:</span> EMA Crossover Logic Triggered
+                    </div>
+                </div>
+
+                <!-- Radar Chart Container -->
+                <div class="h-32 w-full mt-2 opacity-50 relative">
+                    <canvas id="agentRadar"></canvas>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER: VISUAL CORTEX (CHARTS) -->
+        <div class="col-span-6 flex flex-col gap-2">
+            <div class="glass-panel flex-1 rounded-lg p-1 relative group">
+                <!-- Chart Toolbar -->
+                <div class="absolute top-3 left-3 z-10 flex gap-2">
+                    <div
+                        class="bg-black/60 backdrop-blur px-2 py-1 rounded border border-white/5 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[var(--neon-green)]"></span>
+                        <span class="text-xs font-bold font-mono text-gray-200">NIFTY 50 (SPOT)</span>
+                    </div>
+                </div>
+
+                <div id="main-chart" class="w-full h-full rounded bg-[#020202]"></div>
+
+                <!-- Signal Overlay -->
+                <div class="absolute bottom-4 right-4 bg-black/80 backdrop-blur border border-white/10 p-3 rounded-lg hidden"
+                    id="signal-toast">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase mb-1">STRATEGY SIGNAL</div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-2xl font-black text-[var(--neon-green)]" id="sig-action">BUY</div>
+                        <div class="text-right">
+                            <div class="text-xs font-mono text-white">23,450 CE</div>
+                            <div class="text-[10px] text-gray-500">CONFIDENCE: HIGH</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom: Quick Stats -->
+            <div class="h-16 flex gap-2">
+                <div class="glass-panel flex-1 rounded p-2 flex items-center justify-between px-4">
+                    <span class="text-[10px] text-gray-500 font-bold">RSI (14)</span>
+                    <span class="text-lg font-mono font-bold text-white">58.4</span>
+                </div>
+                <div class="glass-panel flex-1 rounded p-2 flex items-center justify-between px-4">
+                    <span class="text-[10px] text-gray-500 font-bold">MOMENTUM</span>
+                    <span class="text-lg font-mono font-bold text-[var(--neon-green)]">BULLISH</span>
+                </div>
+                <div class="glass-panel flex-1 rounded p-2 flex items-center justify-between px-4">
+                    <span class="text-[10px] text-gray-500 font-bold">VOLATILITY</span>
+                    <span class="text-lg font-mono font-bold text-[var(--neon-blue)]">MEDIUM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: EXECUTION & SETTINGS -->
+        <aside class="col-span-3 flex flex-col gap-2">
+
+            <!-- Manual Controls -->
+            <div class="glass-panel p-4 rounded-lg">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Manual Override</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button
+                        class="bg-[#1a1a1a] hover:bg-[var(--neon-green)] hover:text-black border border-[var(--neon-green)]/30 text-[var(--neon-green)] py-3 rounded font-black text-xs transition-all uppercase tracking-wider">
+                        Quick Buy CE
+                    </button>
+                    <button
+                        class="bg-[#1a1a1a] hover:bg-[var(--neon-red)] hover:text-white border border-[var(--neon-red)]/30 text-[var(--neon-red)] py-3 rounded font-black text-xs transition-all uppercase tracking-wider">
+                        Quick Buy PE
+                    </button>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                    <input type="range" class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-xs font-mono text-gray-400">1 LOT</span>
+                </div>
+            </div>
+
+            <!-- Order History -->
+            <div class="glass-panel flex-1 rounded-lg flex flex-col overflow-hidden">
+                <div class="p-3 border-b border-white/5 flex justify-between items-center bg-white/2">
+                    <h2 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Order Ledger</h2>
+                    <span class="text-[10px] text-gray-500">TODAY</span>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="text-[9px] text-gray-500 uppercase bg-black/20 sticky top-0 backdrop-blur-sm">
+                            <tr>
+                                <th class="p-2 font-medium">Time</th>
+                                <th class="p-2 font-medium">Symbol</th>
+                                <th class="p-2 font-medium">Side</th>
+                                <th class="p-2 font-medium text-right">P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-[10px] font-mono divide-y divide-white/5" id="order-table">
+                            <!-- Rows injected here -->
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="p-2 text-gray-400">12:45:01</td>
+                                <td class="p-2 font-bold">23500 CE</td>
+                                <td class="p-2 text-[var(--neon-green)]">BUY</td>
+                                <td class="p-2 text-right text-gray-500">--</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Link -->
+            <a href="/settings"
+                class="glass-panel p-3 rounded-lg flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer group">
+                <span class="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">⚙️ SYSTEM
+                    SETTINGS</span>
+                <span class="text-[10px] text-[var(--neon-blue)]">ADVANCED ></span>
+            </a>
+        </aside>
+
+    </main>
+
+    <script>
+        // --- CONSTANTS ---
+        const NEON_GREEN = '#00ff9d';
+        const NEON_RED = '#ff0055';
+        const NEON_BLUE = '#00f0ff';
+        const BG_DARK = '#020202';
+
+        // --- CHART SETUP ---
+        const chart = LightweightCharts.createChart(document.getElementById('main-chart'), {
+            layout: {
+                backgroundColor: BG_DARK,
+                textColor: '#666',
+                fontFamily: 'JetBrains Mono',
+            },
+            grid: {
+                vertLines: { color: '#111' },
+                horzLines: { color: '#111' },
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+            },
+            rightPriceScale: {
+                borderColor: '#222',
+            },
+            timeScale: {
+                borderColor: '#222',
+                timeVisible: true,
+                secondsVisible: true,
+            },
+        });
+
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: NEON_GREEN,
+            downColor: NEON_RED,
+            borderVisible: false,
+            wickUpColor: NEON_GREEN,
+            wickDownColor: NEON_RED,
+        });
+
+        // Resize Observer
+        new ResizeObserver(entries => {
+            if (entries.length === 0 || entries[0].target !== document.getElementById('main-chart')) return;
+            const newRect = entries[0].contentRect;
+            chart.applyOptions({ height: newRect.height, width: newRect.width });
+        }).observe(document.getElementById('main-chart'));
+
+
+        // --- WEBSOCKET CONNECTION ---
+        const WS_URL = (window.location.protocol === 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/ws/stream';
+
+        function connectWS() {
+            const ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log("Connected to Market Data Stream");
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+
+                    if (msg.type === 'TICK') {
+                        // Update Chart
+                        // For demo, we are streaming raw ticks, we simulate candle updates
+                        // Ideally backend sends aggregated candles or we aggregate here.
+                        handleTick(msg.data);
+                    }
+                    else if (msg.type === 'LOG') {
+                        addLog(msg.data);
+                    }
+                    else if (msg.type === 'ORDER') {
+                        addOrder(msg.data);
+                    }
+                } catch (e) {
+                    console.error("WS Parse Error", e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log("Disconnected. Reconnecting...");
+                setTimeout(connectWS, 3000);
+            };
+        }
+
+        // --- DATA HANDLERS ---
+        let currentCandle = null;
+
+        function handleTick(tick) {
+            // Update Ticker
+            if (tick.symbol.includes("NIFTY 50") || tick.symbol.includes("NIFTY")) {
+                document.getElementById('ticker-nifty').innerText = tick.ltp.toFixed(2);
+                document.getElementById('ticker-nifty').className = `text-xl font-bold font-mono tracking-tight ${tick.change >= 0 ? 'text-[var(--neon-green)]' : 'text-[var(--neon-red)]'}`;
+            }
+
+            // Client-side Candle Aggregation (1-min) for smooth chart
+            const time = Math.floor(Date.now() / 1000);
+            const candleTime = time - (time % 60);
+
+            if (!currentCandle || currentCandle.time !== candleTime) {
+                currentCandle = {
+                    time: candleTime,
+                    open: tick.ltp,
+                    high: tick.ltp,
+                    low: tick.ltp,
+                    close: tick.ltp
+                };
+            } else {
+                currentCandle.close = tick.ltp;
+                currentCandle.high = Math.max(currentCandle.high, tick.ltp);
+                currentCandle.low = Math.min(currentCandle.low, tick.ltp);
+            }
+
+            candleSeries.update(currentCandle);
+        }
+
+        function addLog(msg) {
+            const logs = document.getElementById('agent-logs');
+            const d = document.createElement('div');
+            d.innerHTML = `<span class="text-[var(--neon-blue)]">${new Date().toLocaleTimeString()}</span>: ${msg}`;
+            d.className = "text-[10px] font-mono text-gray-500 border-l-2 border-gray-800 pl-2 opacity-0 animate-slide-in";
+            // Simple Animation in CSS needed for slide-in or just append
+            d.style.animation = "scanline 0.5s ease"; // Reusing scanline for effect
+            logs.prepend(d);
+
+            if (logs.children.length > 20) logs.lastChild.remove();
+        }
+
+        function addOrder(order) {
+            const table = document.getElementById('order-table');
+            const row = document.createElement('tr');
+            row.className = "hover:bg-white/5 transition-colors border-l-2 " + (order.action === 'BUY' ? "border-[var(--neon-green)]" : "border-[var(--neon-red)]");
+
+            row.innerHTML = `
+                <td class="p-2 text-gray-400">${new Date().toLocaleTimeString()}</td>
+                <td class="p-2 font-bold text-white">${order.symbol}</td>
+                <td class="p-2 ${order.action === 'BUY' ? 'text-[var(--neon-green)]' : 'text-[var(--neon-red)]'}">${order.action}</td>
+                <td class="p-2 text-right text-white">--</td>
+            `;
+            table.prepend(row);
+        }
+
+        // --- INIT ---
+        connectWS();
+
+        // Agent Radar Chart (Visual Candy)
+        const ctx = document.getElementById('agentRadar').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Momentum', 'Trend', 'Volatility', 'Volume', 'Sentiment'],
+                datasets: [{
+                    label: 'Market State',
+                    data: [80, 70, 40, 90, 60],
+                    backgroundColor: 'rgba(0, 255, 157, 0.2)',
+                    borderColor: '#00ff9d',
+                    pointBackgroundColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255,255,255,0.1)' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { display: false, backdropColor: 'transparent' },
+                        pointLabels: { color: '#666', font: { size: 9 } }
+                    }
+                },
+                plugins: { legend: { display: false } },
+                maintainAspectRatio: false
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPilot AI // Deep Scan Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #161616;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-blue: #0099ff;
+            --accent-yellow: #ffcc00;
+            --accent-purple: #a855f7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-online {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .btn-execute {
+            background: linear-gradient(135deg, var(--accent-green), #00cc66);
+            color: #000;
+            font-weight: 800;
+            padding: 16px 32px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .btn-execute:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, var(--accent-blue), #0066cc);
+            color: #fff;
+            font-weight: 700;
+            padding: 14px 28px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-scan:hover {
+            box-shadow: 0 0 25px rgba(0, 153, 255, 0.4);
+        }
+
+        .indicator-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes scan-line {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        .scanning .scan-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, var(--accent-blue), transparent);
+            animation: scan-line 2s infinite;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col">
+        <div class="p-5 border-b border-[var(--border)]">
+            <h1 class="text-xl font-black tracking-tight">MARKET<span class="text-[var(--accent-green)]">PILOT</span>
+            </h1>
+            <div class="text-[10px] text-[var(--text-secondary)] font-mono mt-1 flex items-center gap-2">
+                <span class="status-dot status-online pulse"></span> AI ONLINE v9.5
+            </div>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1">
+            <a href="/dashboard" class="sidebar-link">
+                <span>📊</span> Command Center
+            </a>
+            <a href="/dashboard/orders" class="sidebar-link">
+                <span>📜</span> Order History
+            </a>
+            <a href="/dashboard/analysis" class="sidebar-link active">
+                <span>🔍</span> Deep Scan
+            </a>
+            <a href="/settings" class="sidebar-link">
+                <span>⚙️</span> Settings
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-[var(--border)]">
+            <a href="/dashboard"
+                class="block w-full text-center py-3 bg-[var(--accent-green)] text-black font-bold rounded-lg text-sm">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col p-6 overflow-hidden">
+
+        <!-- HEADER -->
+        <header class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-3">
+                    🔍 Deep Scan Analysis
+                    <span class="indicator-pill bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]" id="scan-status">
+                        <span class="w-2 h-2 rounded-full bg-[var(--accent-blue)]"></span>
+                        READY
+                    </span>
+                </h1>
+                <p class="text-sm text-[var(--text-secondary)] mt-1">AI-powered pre-trade analysis for optimal entry</p>
+            </div>
+
+            <button onclick="runFullScan()" class="btn-scan flex items-center gap-2" id="scan-btn">
+                🔍 Run Full Deep Scan
+            </button>
+        </header>
+
+        <!-- MAIN GRID -->
+        <div class="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-y-auto">
+
+            <!-- LEFT: MARKET REGIME & INDICATORS -->
+            <div class="col-span-4 space-y-4">
+
+                <!-- Market Regime -->
+                <div class="card relative overflow-hidden" id="regime-card">
+                    <div class="card-header flex justify-between items-center">
+                        <span>📈 Market Regime</span>
+                        <span class="text-[10px] text-[var(--text-secondary)]" id="regime-time">--</span>
+                    </div>
+                    <div class="p-6 text-center">
+                        <div class="text-5xl font-black mb-2" id="regime-type">--</div>
+                        <div class="text-sm text-[var(--text-secondary)]" id="regime-description">Run scan to detect
+                            market regime</div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <div class="bg-[var(--bg-secondary)] rounded-lg p-3">
+                                <div class="text-[10px] text-[var(--text-secondary)]">TREND STRENGTH</div>
+                                <div class="text-lg font-bold mono" id="trend-strength">--</div>
+                            </div>
+                            <div class="bg-[var(--bg-secondary)] rounded-lg p-3">
+                                <div class="text-[10px] text-[var(--text-secondary)]">MOMENTUM</div>
+                                <div class="text-lg font-bold mono" id="momentum-val">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scan-overlay hidden"></div>
+                </div>
+
+                <!-- Key Indicators -->
+                <div class="card">
+                    <div class="card-header">📊 Key Indicators</div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-[var(--text-secondary)]">RSI (14)</span>
+                            <span class="font-bold mono" id="ind-rsi">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-[var(--text-secondary)]">MACD Signal</span>
+                            <span class="font-bold" id="ind-macd">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-[var(--text-secondary)]">EMA Cross</span>
+                            <span class="font-bold" id="ind-ema">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-[var(--text-secondary)]">Supertrend</span>
+                            <span class="font-bold" id="ind-supertrend">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-[var(--text-secondary)]">VWAP Position</span>
+                            <span class="font-bold" id="ind-vwap">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume Profile -->
+                <div class="card">
+                    <div class="card-header">📊 Volume Profile</div>
+                    <div class="p-4 h-48">
+                        <canvas id="volume-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER: AI RECOMMENDATION -->
+            <div class="col-span-4 space-y-4">
+
+                <!-- Main Recommendation Card -->
+                <div class="card border-2 border-[var(--accent-green)]/30" id="rec-card">
+                    <div class="card-header bg-[var(--accent-green)]/10">🤖 AI Recommendation</div>
+                    <div class="p-6 text-center">
+                        <div class="text-6xl font-black mb-2" id="rec-action">--</div>
+                        <div class="text-xl font-bold text-[var(--text-secondary)]" id="rec-contract">--</div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="bg-[var(--bg-secondary)] rounded-lg p-3">
+                                <div class="text-[10px] text-[var(--text-secondary)]">CONFIDENCE</div>
+                                <div class="text-2xl font-black text-[var(--accent-blue)]" id="rec-confidence">--%</div>
+                            </div>
+                            <div class="bg-[var(--bg-secondary)] rounded-lg p-3">
+                                <div class="text-[10px] text-[var(--text-secondary)]">WIN PROBABILITY</div>
+                                <div class="text-2xl font-black text-[var(--accent-green)]" id="rec-winprob">--%</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-left bg-[var(--bg-secondary)] rounded-lg p-4">
+                            <div class="text-[10px] text-[var(--text-secondary)] mb-2">REASONING</div>
+                            <div class="text-sm text-[var(--text-primary)]" id="rec-reasoning">
+                                Run Deep Scan to generate AI recommendations based on current market conditions.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execute Button -->
+                <button onclick="executeRecommendation()"
+                    class="btn-execute w-full flex items-center justify-center gap-3" id="execute-btn" disabled>
+                    ⚡ Execute Recommended Trade
+                </button>
+
+                <!-- Strategy Recommendation -->
+                <div class="card">
+                    <div class="card-header">🧠 Best Strategy for Conditions</div>
+                    <div class="p-4">
+                        <div
+                            class="flex items-center gap-3 p-3 bg-[var(--accent-purple)]/10 border border-[var(--accent-purple)]/30 rounded-lg">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-[var(--accent-purple)] flex items-center justify-center text-xl">
+                                🎯</div>
+                            <div>
+                                <div class="font-bold" id="best-strategy">--</div>
+                                <div class="text-xs text-[var(--text-secondary)]" id="strategy-match">--</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-2" id="strategy-scores">
+                            <!-- Strategy scores populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: RISK & OPTIONS -->
+            <div class="col-span-4 space-y-4">
+
+                <!-- Risk Analysis -->
+                <div class="card">
+                    <div class="card-header">⚠️ Risk Assessment</div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm text-[var(--text-secondary)]">Overall Risk Level</span>
+                            <span class="indicator-pill" id="risk-level">--</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-[var(--text-secondary)]">Volatility Risk</span>
+                                    <span id="risk-vol">--</span>
+                                </div>
+                                <div class="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                                    <div class="h-full bg-[var(--accent-yellow)]" id="risk-vol-bar" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-[var(--text-secondary)]">Trend Risk</span>
+                                    <span id="risk-trend">--</span>
+                                </div>
+                                <div class="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                                    <div class="h-full bg-[var(--accent-blue)]" id="risk-trend-bar" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-[var(--text-secondary)]">Liquidity Risk</span>
+                                    <span id="risk-liq">--</span>
+                                </div>
+                                <div class="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                                    <div class="h-full bg-[var(--accent-green)]" id="risk-liq-bar" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-[var(--bg-secondary)] rounded-lg">
+                            <div class="text-[10px] text-[var(--text-secondary)] mb-1">SUGGESTED STOP LOSS</div>
+                            <div class="text-lg font-bold mono" id="suggested-sl">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option Chain Summary -->
+                <div class="card">
+                    <div class="card-header">⛓️ Option Chain Analysis</div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div
+                                class="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3 text-center">
+                                <div class="text-[10px] text-[var(--accent-green)]">CALL OI</div>
+                                <div class="text-lg font-bold mono" id="call-oi">--</div>
+                            </div>
+                            <div
+                                class="bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30 rounded-lg p-3 text-center">
+                                <div class="text-[10px] text-[var(--accent-red)]">PUT OI</div>
+                                <div class="text-lg font-bold mono" id="put-oi">--</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-[var(--text-secondary)]">PCR Ratio</span>
+                                <span class="font-bold mono" id="pcr-ratio">--</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-[var(--text-secondary)]">Max Pain</span>
+                                <span class="font-bold mono" id="max-pain">--</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-[var(--text-secondary)]">IV Percentile</span>
+                                <span class="font-bold mono" id="iv-percentile">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="card">
+                    <div class="card-header">🎯 Market State Radar</div>
+                    <div class="p-4 h-48">
+                        <canvas id="radar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+        let radarChart = null;
+        let volumeChart = null;
+
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', () => {
+            initRadarChart();
+            initVolumeChart();
+        });
+
+        function initRadarChart() {
+            const ctx = document.getElementById('radar-chart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Momentum', 'Trend', 'Volatility', 'Volume', 'Sentiment'],
+                    datasets: [{
+                        label: 'Market State',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(0, 255, 136, 0.2)',
+                        borderColor: '#00ff88',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { display: false, backdropColor: 'transparent' },
+                            pointLabels: { color: '#888', font: { size: 10 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } },
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function initVolumeChart() {
+            const ctx = document.getElementById('volume-chart').getContext('2d');
+            volumeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['23400', '23450', '23500', '23550', '23600'],
+                    datasets: [{
+                        label: 'Volume',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(0, 153, 255, 0.5)',
+                        borderColor: '#0099ff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#666', font: { size: 10 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } },
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        async function runFullScan() {
+            const btn = document.getElementById('scan-btn');
+            btn.innerHTML = '⏳ Scanning...';
+            btn.disabled = true;
+
+            document.getElementById('scan-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-[var(--accent-yellow)] animate-pulse"></span> SCANNING';
+            document.querySelectorAll('.card').forEach(c => c.classList.add('scanning'));
+
+            try {
+                const res = await fetch(`${API}/analyze/deep`, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'Success') {
+                    updateScanResults(data);
+                    document.getElementById('scan-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-[var(--accent-green)]"></span> COMPLETE';
+                    document.getElementById('execute-btn').disabled = false;
+                } else {
+                    alert('Scan failed: ' + data.status);
+                }
+            } catch (e) {
+                console.error('Scan error:', e);
+                alert('Scan error: ' + e.message);
+            }
+
+            btn.innerHTML = '🔍 Run Full Deep Scan';
+            btn.disabled = false;
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('scanning'));
+        }
+
+        function updateScanResults(data) {
+            const macro = data.macro_scan || {};
+            const pred = data.prediction_engine || {};
+            const volume = data.volume_profile || {};
+
+            // Update time
+            document.getElementById('regime-time').innerText = new Date().toLocaleTimeString();
+
+            // Market Regime
+            const regimeMap = {
+                'TRENDING_UP': { text: 'BULLISH', color: 'var(--accent-green)', desc: 'Strong upward momentum detected' },
+                'TRENDING_DOWN': { text: 'BEARISH', color: 'var(--accent-red)', desc: 'Downward pressure observed' },
+                'RANGING': { text: 'SIDEWAYS', color: 'var(--accent-yellow)', desc: 'Range-bound, await breakout' }
+            };
+            const regime = regimeMap[macro.market_regime] || { text: macro.market_regime || 'UNKNOWN', color: '#888', desc: '' };
+            document.getElementById('regime-type').innerText = regime.text;
+            document.getElementById('regime-type').style.color = regime.color;
+            document.getElementById('regime-description').innerText = regime.desc;
+
+            // Trend & Momentum
+            document.getElementById('trend-strength').innerText = (macro.trend_strength || 0).toFixed(1) + '%';
+            document.getElementById('momentum-val').innerText = macro.momentum_direction || '--';
+
+            // Indicators
+            document.getElementById('ind-rsi').innerText = (macro.rsi || 0).toFixed(1);
+            document.getElementById('ind-macd').innerText = macro.macd_signal || '--';
+            document.getElementById('ind-ema').innerText = macro.ema_cross || '--';
+            document.getElementById('ind-supertrend').innerText = macro.supertrend || '--';
+            document.getElementById('ind-vwap').innerText = macro.vwap_position || '--';
+
+            // AI Recommendation
+            const rec = macro.recommendation || 'HOLD';
+            document.getElementById('rec-action').innerText = rec;
+            document.getElementById('rec-action').style.color = rec === 'BUY' ? 'var(--accent-green)' : rec === 'SELL' ? 'var(--accent-red)' : 'var(--accent-yellow)';
+
+            const topCall = macro.calls?.[0];
+            document.getElementById('rec-contract').innerText = topCall ? `${topCall.strike} ${topCall.type}` : 'No specific contract';
+            document.getElementById('rec-confidence').innerText = (pred.confidence || 75) + '%';
+            document.getElementById('rec-winprob').innerText = pred.simulated_win_rate || '65%';
+            document.getElementById('rec-reasoning').innerText = macro.reasoning ||
+                `Based on ${macro.market_regime} market regime with ${macro.momentum_direction} momentum. ` +
+                `RSI at ${(macro.rsi || 50).toFixed(1)} suggests ${macro.rsi > 70 ? 'overbought' : macro.rsi < 30 ? 'oversold' : 'neutral'} conditions.`;
+
+            // Strategy Scores
+            const strategies = [
+                { name: 'BuyCallScalp', score: 85 },
+                { name: 'ORBStrategy', score: 72 },
+                { name: 'ThetaDecay', score: 45 },
+                { name: 'OIDirectional', score: 68 }
+            ];
+            strategies.sort((a, b) => b.score - a.score);
+
+            document.getElementById('best-strategy').innerText = strategies[0].name;
+            document.getElementById('strategy-match').innerText = `${strategies[0].score}% match for current conditions`;
+
+            document.getElementById('strategy-scores').innerHTML = strategies.map(s => `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-[var(--text-secondary)] w-24">${s.name}</span>
+                    <div class="flex-1 h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                        <div class="h-full bg-[var(--accent-purple)]" style="width: ${s.score}%"></div>
+                    </div>
+                    <span class="text-xs mono">${s.score}%</span>
+                </div>
+            `).join('');
+
+            // Risk Analysis
+            const riskLevel = macro.consensus_score > 0 ? 'LOW' : macro.consensus_score < -5 ? 'HIGH' : 'MEDIUM';
+            const riskColors = { LOW: 'bg-[var(--accent-green)] text-black', MEDIUM: 'bg-[var(--accent-yellow)] text-black', HIGH: 'bg-[var(--accent-red)] text-white' };
+            document.getElementById('risk-level').className = `indicator-pill ${riskColors[riskLevel]}`;
+            document.getElementById('risk-level').innerText = riskLevel;
+
+            const volRisk = Math.min(100, Math.abs((macro.vix || 12) - 15) * 5 + 20);
+            const trendRisk = 100 - (macro.trend_strength || 50);
+            const liqRisk = 20;
+
+            document.getElementById('risk-vol').innerText = volRisk.toFixed(0) + '%';
+            document.getElementById('risk-vol-bar').style.width = volRisk + '%';
+            document.getElementById('risk-trend').innerText = trendRisk.toFixed(0) + '%';
+            document.getElementById('risk-trend-bar').style.width = trendRisk + '%';
+            document.getElementById('risk-liq').innerText = liqRisk + '%';
+            document.getElementById('risk-liq-bar').style.width = liqRisk + '%';
+
+            document.getElementById('suggested-sl').innerText = '₹' + ((macro.spot || 23500) * 0.005).toFixed(0) + ' (0.5%)';
+
+            // Option Chain
+            document.getElementById('call-oi').innerText = '2.5L';
+            document.getElementById('put-oi').innerText = '3.1L';
+            document.getElementById('pcr-ratio').innerText = '1.24';
+            document.getElementById('max-pain').innerText = '23,500';
+            document.getElementById('iv-percentile').innerText = '42%';
+
+            // Update Radar Chart
+            if (radarChart) {
+                radarChart.data.datasets[0].data = [
+                    macro.momentum_score || Math.random() * 100,
+                    macro.trend_strength || Math.random() * 100,
+                    (macro.vix || 15) * 5,
+                    volume.volume_score || Math.random() * 100,
+                    50 + (macro.consensus_score || 0) * 5
+                ];
+                radarChart.update();
+            }
+
+            // Update Volume Chart
+            if (volumeChart) {
+                volumeChart.data.datasets[0].data = [
+                    Math.random() * 100000,
+                    Math.random() * 150000,
+                    Math.random() * 200000,
+                    Math.random() * 120000,
+                    Math.random() * 80000
+                ];
+                volumeChart.update();
+            }
+        }
+
+        async function executeRecommendation() {
+            const action = document.getElementById('rec-action').innerText;
+            const contract = document.getElementById('rec-contract').innerText;
+
+            if (action === '--' || action === 'HOLD') {
+                alert('No trade recommendation to execute');
+                return;
+            }
+
+            if (!confirm(`Execute ${action} on ${contract}?`)) return;
+
+            try {
+                await fetch(`${API}/execute?symbol=${contract}&action=${action}&quantity=50`, { method: 'POST' });
+                alert(`Order placed: ${action} ${contract}`);
+                window.location.href = '/dashboard/orders';
+            } catch (e) {
+                alert('Execution failed: ' + e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

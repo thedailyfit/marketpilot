@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SETTINGS // MARKETPILOT AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            background: #050505;
+            color: #e1e1e1;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-link {
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 255, 157, 0.2);
+            border-left: 3px solid #00ff9d;
+        }
+
+        input {
+            background: #111;
+            border: 1px solid #333;
+            color: white;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ff9d;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex">
+    <!-- SIDEBAR -->
+    <aside class="w-56 glass flex flex-col p-4 gap-2">
+        <h1 class="text-xl font-black italic mb-4">MARKETPILOT<span class="text-[#00ff9d]">AI</span></h1>
+        <a href="/dashboard" class="sidebar-link px-4 py-2 rounded text-sm font-bold">📊 Dashboard</a>
+        <a href="/trades" class="sidebar-link px-4 py-2 rounded text-sm font-bold">📜 Trade History</a>
+        <a href="/settings" class="sidebar-link active px-4 py-2 rounded text-sm font-bold">⚙️ Settings</a>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-6 overflow-auto">
+        <h2 class="text-2xl font-black mb-6 text-white">ACCOUNT SETTINGS</h2>
+
+        <!-- CONNECTION STATUS -->
+        <div class="glass p-4 rounded-lg mb-6 flex items-center gap-4">
+            <div id="status-dot" class="w-4 h-4 rounded-full bg-gray-500"></div>
+            <div>
+                <p class="font-bold text-white" id="status-text">Checking Connection...</p>
+                <p class="text-xs text-gray-500" id="status-sub">Verifying Upstox API credentials</p>
+            </div>
+        </div>
+
+        <!-- API CREDENTIALS -->
+        <div class="glass p-6 rounded-lg max-w-lg">
+            <h3 class="text-lg font-bold mb-4 text-[#00ff9d]">Upstox API Credentials</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">API Key</label>
+                    <input type="text" id="api-key" class="w-full p-3 rounded mt-1 mono text-sm"
+                        placeholder="Enter your API Key">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">API Secret</label>
+                    <input type="password" id="api-secret" class="w-full p-3 rounded mt-1 mono text-sm"
+                        placeholder="Enter your API Secret">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Access Token</label>
+                    <input type="text" id="access-token" class="w-full p-3 rounded mt-1 mono text-sm"
+                        placeholder="Paste your Access Token">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Redirect URI (Copy to Upstox App)</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="text" id="redirect-uri"
+                            class="w-full p-3 rounded mono text-sm bg-[#222] text-gray-400" readonly
+                            value="http://localhost:8001/callback">
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('redirect-uri').value)"
+                            class="px-4 bg-[#333] hover:bg-[#444] rounded text-white font-bold">COPY</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button onclick="saveCredentials()"
+                    class="flex-1 py-3 bg-[#00ff9d] text-black font-bold rounded hover:bg-[#00cc7d] transition">
+                    SAVE CREDENTIALS
+                </button>
+                <button onclick="connectUpstox()"
+                    class="flex-1 py-3 bg-[#58a6ff] text-black font-bold rounded hover:bg-[#4096ff] transition">
+                    CONNECT UPSTOX
+                </button>
+            </div>
+
+            <p class="text-[10px] text-gray-500 mt-4">
+                * Credentials are stored locally in .env file. Access Token expires daily and needs to be refreshed.
+            </p>
+        </div>
+
+        <!-- TRADING CONFIG -->
+        <div class="glass p-6 rounded-lg max-w-lg mt-6">
+            <h3 class="text-lg font-bold mb-4 text-[#58a6ff]">Trading Configuration</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Stop Loss %</label>
+                    <input type="number" id="sl-pct" class="w-full p-3 rounded mt-1 mono text-sm" value="2" step="0.5">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Take Profit %</label>
+                    <input type="number" id="tp-pct" class="w-full p-3 rounded mt-1 mono text-sm" value="2" step="0.5">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Max Daily Loss ₹</label>
+                    <input type="number" id="max-loss" class="w-full p-3 rounded mt-1 mono text-sm" value="2000">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 font-bold uppercase">Default Qty</label>
+                    <input type="number" id="default-qty" class="w-full p-3 rounded mt-1 mono text-sm" value="50">
+                </div>
+            </div>
+            <button onclick="saveTradingConfig()"
+                class="w-full mt-4 py-3 bg-[#222] text-white font-bold rounded hover:bg-[#333] transition">
+                SAVE TRADING CONFIG
+            </button>
+        </div>
+
+        <!-- DEBUG & TESTING -->
+        <div class="glass p-6 rounded-lg max-w-lg mt-6 border border-yellow-500/20">
+            <h3 class="text-lg font-bold mb-4 text-yellow-500">Debug & Testing</h3>
+            <p class="text-sm text-gray-400 mb-4">Trigger a manual trade to verify the order flow on dashboard.</p>
+            <button onclick="triggerManualTrade()"
+                class="w-full py-3 bg-yellow-500/10 border border-yellow-500 text-yellow-500 font-bold rounded hover:bg-yellow-500/20 transition mb-4">
+                💥 TRIGGER MANUAL TEST TRADE (BUY)
+            </button>
+            <button onclick="triggerProfitScenario()"
+                class="w-full py-3 bg-green-500/10 border border-green-500 text-green-500 font-bold rounded hover:bg-green-500/20 transition mb-4">
+                🚀 SIMULATE PROFITABLE SCENARIO (+ ₹2500)
+            </button>
+            <button onclick="startSimulation()"
+                class="w-full py-3 bg-red-500/10 border border-red-500 text-red-500 font-bold rounded hover:bg-red-500/20 transition">
+                ⚡ START LIVE MARKET SIMULATION (Auto-Trade)
+            </button>
+        </div>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+
+        async function loadSettings() {
+            try {
+                const r = await fetch(`${API}/api/settings`);
+                const data = await r.json();
+                if (data.api_key) document.getElementById('api-key').value = data.api_key;
+                if (data.has_token) {
+                    document.getElementById('status-dot').className = 'w-4 h-4 rounded-full bg-[#00ff9d] animate-pulse';
+                    document.getElementById('status-text').innerText = 'Connected to Upstox';
+                    document.getElementById('status-sub').innerText = 'API token is active';
+                } else {
+                    document.getElementById('status-dot').className = 'w-4 h-4 rounded-full bg-[#ef4444]';
+                    document.getElementById('status-text').innerText = 'Not Connected';
+                    document.getElementById('status-sub').innerText = 'Enter credentials and connect';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function saveCredentials() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            const apiSecret = document.getElementById('api-secret').value.trim();
+            const accessToken = document.getElementById('access-token').value.trim();
+
+            const r = await fetch(`${API}/api/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret, access_token: accessToken })
+            });
+            const data = await r.json();
+            alert(data.message || 'Saved!');
+            loadSettings();
+        }
+
+        function connectUpstox() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            if (!apiKey) { alert('Enter API Key first!'); return; }
+            const redirectUri = "http://localhost:8001/callback";
+            const authUrl = `https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id=${apiKey}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+            window.open(authUrl, '_blank');
+        }
+
+        async function saveTradingConfig() {
+            alert('Trading config saved (mock). In production, this would update the .env file.');
+        }
+
+        async function triggerManualTrade() {
+            if (!confirm("Are you sure? This will inject a BUY signal into the system.")) return;
+            try {
+                const r = await fetch(`${API}/api/manual_trade`, { method: 'POST' });
+                const data = await r.json();
+                alert(data.message);
+                window.location.href = '/trades'; // Redirect to trades page to see it
+            } catch (e) {
+                alert("Error: " + e);
+            }
+        }
+
+        async function triggerProfitScenario() {
+            try {
+                const r = await fetch(`${API}/api/test/inject_profit`, { method: 'POST' });
+                const data = await r.json();
+                alert(data.message);
+                window.location.href = '/trades';
+            } catch (e) {
+                alert("Error: " + e);
+            }
+        }
+
+        async function startSimulation() {
+            try {
+                const r = await fetch(`${API}/api/test/start_simulation`, { method: 'POST' });
+                const data = await r.json();
+                alert(data.message);
+                window.location.href = '/dashboard'; // Go to dashboard to watch
+            } catch (e) {
+                alert("Error: " + e);
+            }
+        }
+
+        loadSettings();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPilot AI // Order History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #161616;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --accent-green: #00ff88;
+            --accent-red: #ff3366;
+            --accent-blue: #0099ff;
+            --accent-yellow: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .sidebar-link.active {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-online {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-blue);
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-buy {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--accent-green);
+        }
+
+        .badge-sell {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--accent-red);
+        }
+
+        .badge-filled {
+            background: rgba(0, 153, 255, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .badge-pending {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--accent-yellow);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex">
+
+    <!-- SIDEBAR (Same as main dashboard) -->
+    <aside class="w-64 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col">
+        <div class="p-5 border-b border-[var(--border)]">
+            <h1 class="text-xl font-black tracking-tight">MARKET<span class="text-[var(--accent-green)]">PILOT</span>
+            </h1>
+            <div class="text-[10px] text-[var(--text-secondary)] font-mono mt-1 flex items-center gap-2">
+                <span class="status-dot status-online"></span> AI ONLINE v9.5
+            </div>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1">
+            <a href="/dashboard" class="sidebar-link">
+                <span>📊</span> Command Center
+            </a>
+            <a href="/dashboard/orders" class="sidebar-link active">
+                <span>📜</span> Order History
+            </a>
+            <a href="/dashboard/analysis" class="sidebar-link">
+                <span>🔍</span> Deep Scan
+            </a>
+            <a href="/settings" class="sidebar-link">
+                <span>⚙️</span> Settings
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-[var(--border)]">
+            <a href="/dashboard"
+                class="block w-full text-center py-3 bg-[var(--accent-green)] text-black font-bold rounded-lg text-sm">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col p-6 overflow-hidden">
+
+        <!-- HEADER -->
+        <header class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold">Order History</h1>
+                <p class="text-sm text-[var(--text-secondary)] mt-1">Complete trade execution log</p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Filters -->
+                <div class="flex gap-2">
+                    <button class="filter-btn active" onclick="filterOrders('all')">All</button>
+                    <button class="filter-btn" onclick="filterOrders('today')">Today</button>
+                    <button class="filter-btn" onclick="filterOrders('week')">This Week</button>
+                    <button class="filter-btn" onclick="filterOrders('buy')">Buy Only</button>
+                    <button class="filter-btn" onclick="filterOrders('sell')">Sell Only</button>
+                </div>
+
+                <!-- Export -->
+                <button onclick="exportCSV()"
+                    class="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:text-white transition-colors">
+                    📥 Export CSV
+                </button>
+            </div>
+        </header>
+
+        <!-- STATS ROW -->
+        <div class="grid grid-cols-5 gap-4 mb-6">
+            <div class="card p-4">
+                <div class="text-[10px] text-[var(--text-secondary)] font-bold uppercase">Total Trades</div>
+                <div class="text-2xl font-bold mono mt-1" id="stat-total">0</div>
+            </div>
+            <div class="card p-4">
+                <div class="text-[10px] text-[var(--text-secondary)] font-bold uppercase">Win Rate</div>
+                <div class="text-2xl font-bold mono mt-1 text-[var(--accent-green)]" id="stat-winrate">0%</div>
+            </div>
+            <div class="card p-4">
+                <div class="text-[10px] text-[var(--text-secondary)] font-bold uppercase">Total P&L</div>
+                <div class="text-2xl font-bold mono mt-1" id="stat-pnl">₹0</div>
+            </div>
+            <div class="card p-4">
+                <div class="text-[10px] text-[var(--text-secondary)] font-bold uppercase">Avg Trade</div>
+                <div class="text-2xl font-bold mono mt-1" id="stat-avg">₹0</div>
+            </div>
+            <div class="card p-4">
+                <div class="text-[10px] text-[var(--text-secondary)] font-bold uppercase">Best Trade</div>
+                <div class="text-2xl font-bold mono mt-1 text-[var(--accent-green)]" id="stat-best">₹0</div>
+            </div>
+        </div>
+
+        <!-- ORDERS TABLE -->
+        <div class="card flex-1 overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-[var(--border)] flex items-center justify-between">
+                <span class="text-sm font-bold">Trade Execution Log</span>
+                <span class="text-xs text-[var(--text-secondary)]" id="order-count">0 orders</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <table>
+                    <thead class="sticky top-0 bg-[var(--bg-card)]">
+                        <tr>
+                            <th>Time</th>
+                            <th>Order ID</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Quantity</th>
+                            <th>Entry Price</th>
+                            <th>Exit Price</th>
+                            <th>P&L</th>
+                            <th>Status</th>
+                            <th>Strategy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table">
+                        <tr>
+                            <td colspan="10" class="text-center py-12 text-[var(--text-secondary)]">
+                                <div class="text-4xl mb-2">📜</div>
+                                <div>No orders yet. Start trading to see your history here.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+        let allOrders = [];
+
+        async function loadOrders() {
+            try {
+                const res = await fetch(`${API}/api/trades`);
+                allOrders = await res.json();
+                renderOrders(allOrders);
+                updateStats(allOrders);
+            } catch (e) {
+                console.error('Failed to load orders:', e);
+            }
+        }
+
+        function renderOrders(orders) {
+            const tbody = document.getElementById('orders-table');
+            document.getElementById('order-count').innerText = orders.length + ' orders';
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-12 text-[var(--text-secondary)]">
+                            <div class="text-4xl mb-2">📜</div>
+                            <div>No orders match your filter.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = orders.map((order, idx) => {
+                const pnl = order.pnl || 0;
+                const pnlClass = pnl >= 0 ? 'text-[var(--accent-green)]' : 'text-[var(--accent-red)]';
+                const sideClass = order.action === 'BUY' ? 'badge-buy' : 'badge-sell';
+                const statusClass = order.status === 'FILLED' ? 'badge-filled' : 'badge-pending';
+
+                return `
+                    <tr>
+                        <td class="mono text-[var(--text-secondary)]">${formatTime(order.timestamp)}</td>
+                        <td class="mono text-xs">${order.order_id || 'ORD-' + (1000 + idx)}</td>
+                        <td class="font-bold">${order.symbol || '--'}</td>
+                        <td><span class="badge ${sideClass}">${order.action || '--'}</span></td>
+                        <td class="mono">${order.quantity || 50}</td>
+                        <td class="mono">₹${(order.entry_price || 0).toFixed(2)}</td>
+                        <td class="mono">₹${(order.exit_price || 0).toFixed(2)}</td>
+                        <td class="mono font-bold ${pnlClass}">₹${pnl.toFixed(2)}</td>
+                        <td><span class="badge ${statusClass}">${order.status || 'FILLED'}</span></td>
+                        <td class="text-[var(--text-secondary)] text-xs">${order.strategy || 'Manual'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStats(orders) {
+            const total = orders.length;
+            const wins = orders.filter(o => (o.pnl || 0) > 0).length;
+            const totalPnl = orders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+            const avg = total > 0 ? totalPnl / total : 0;
+            const best = orders.length > 0 ? Math.max(...orders.map(o => o.pnl || 0)) : 0;
+            const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-winrate').innerText = winRate + '%';
+            document.getElementById('stat-pnl').innerText = '₹' + totalPnl.toFixed(2);
+            document.getElementById('stat-pnl').style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            document.getElementById('stat-avg').innerText = '₹' + avg.toFixed(2);
+            document.getElementById('stat-best').innerText = '₹' + best.toFixed(2);
+        }
+
+        function filterOrders(type) {
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let filtered = allOrders;
+            const now = new Date();
+
+            switch (type) {
+                case 'today':
+                    const today = now.toDateString();
+                    filtered = allOrders.filter(o => new Date(o.timestamp * 1000).toDateString() === today);
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    filtered = allOrders.filter(o => new Date(o.timestamp * 1000) >= weekAgo);
+                    break;
+                case 'buy':
+                    filtered = allOrders.filter(o => o.action === 'BUY');
+                    break;
+                case 'sell':
+                    filtered = allOrders.filter(o => o.action === 'SELL');
+                    break;
+            }
+
+            renderOrders(filtered);
+            updateStats(filtered);
+        }
+
+        function exportCSV() {
+            if (allOrders.length === 0) {
+                alert('No orders to export');
+                return;
+            }
+
+            const headers = ['Time', 'Order ID', 'Symbol', 'Side', 'Quantity', 'Entry Price', 'Exit Price', 'P&L', 'Status', 'Strategy'];
+            const rows = allOrders.map(o => [
+                formatTime(o.timestamp),
+                o.order_id || '',
+                o.symbol || '',
+                o.action || '',
+                o.quantity || '',
+                o.entry_price || '',
+                o.exit_price || '',
+                o.pnl || '',
+                o.status || '',
+                o.strategy || ''
+            ]);
+
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '--';
+            // Handle Unix timestamp (seconds)
+            const date = typeof timestamp === 'number'
+                ? new Date(timestamp * 1000)
+                : new Date(timestamp);
+
+            if (isNaN(date.getTime())) return 'Invalid Date';
+
+            return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' +
+                date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadOrders);
+    </script>
+</body>
+
+</html>

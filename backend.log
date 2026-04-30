@@ -1,0 +1,15 @@
+INFO:DataMiningAgent:Data Mine Initialized @ data/market_data.db
+C:\Users\Pc\Desktop\marketpilot_ai\new_server.py:41: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+C:\Users\Pc\Desktop\marketpilot_ai\new_server.py:45: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")

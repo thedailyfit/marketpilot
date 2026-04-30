@@ -1,0 +1,26 @@
+{
+  "TestStrat": {
+    "name": "TestStrat",
+    "active_version": "v1.0.0",
+    "versions": {
+      "v1.0.0": {
+        "version_id": "v1.0.0",
+        "created_at": 1770470383,
+        "parameters": {
+          "period": 20
+        },
+        "status": "ACTIVE",
+        "notes": "Initial Release"
+      },
+      "v1.1.0": {
+        "version_id": "v1.1.0",
+        "created_at": 1770470383,
+        "parameters": {
+          "period": 10
+        },
+        "status": "DISABLED",
+        "notes": "Faster Period [ROLLED BACK]"
+      }
+    }
+  }
+}

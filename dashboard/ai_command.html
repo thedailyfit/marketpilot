@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPilot Command Center v11.0 (Level-01)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #000000;
+            --bg-card: #050505;
+            --border-color: #222222;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        .nav-sidebar {
+            width: 180px;
+            background: #000;
+            border-right: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #888;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #111;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            border-left: 3px solid #22c55e;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            height: 100%;
+            gap: 0;
+        }
+
+        .agent-card {
+            background: #080808;
+            border: 1px solid #222;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+        }
+
+        .status-pill {
+            background: #111;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .header-bar {
+            height: 44px;
+            background: #000;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+
+        .ticker-box {
+            background: #111;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono';
+        }
+
+        .log-panel {
+            background: #050505;
+            border-top: 1px solid #222;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 6px;
+            color: #888;
+            height: 80px;
+            overflow-y: auto;
+        }
+
+        .hex-cell {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 4px;
+            text-align: center;
+            border-radius: 2px;
+        }
+
+        /* Footprint Cluster Styles */
+        .footprint-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .delta-bar {
+            height: 24px;
+            background: #111;
+            border-top: 1px solid #222;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 8px;
+        }
+
+        .delta-indicator {
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .replay-bar {
+            height: 32px;
+            background: #080808;
+            border-top: 1px solid #222;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+
+        .replay-btn {
+            background: #111;
+            border: 1px solid #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .replay-btn:hover {
+            background: #222;
+        }
+    </style>
+</head>
+
+<body class="flex flex-row h-screen w-screen">
+
+    <!-- NAV SIDEBAR -->
+    <nav class="nav-sidebar shrink-0">
+        <div class="logo">MARKET<span class="text-green-500">PILOT</span>
+            <div class="text-[8px] font-normal text-gray-500 mt-1">v11.0 LEVEL-01</div>
+        </div>
+        <div class="flex-1">
+            <div class="nav-item active"><span>📊</span> Command Center</div>
+            <div class="nav-item"><span>📜</span> Order History</div>
+            <div class="nav-item"><span>🔍</span> Deep Scan</div>
+            <div class="nav-item"><span>⚙️</span> Settings</div>
+        </div>
+        <div class="mt-auto border-t border-[#222] pt-4">
+            <button onclick="startAI()"
+                class="w-full bg-green-900/30 border border-green-900 text-green-400 font-bold text-[10px] py-2 rounded mb-2">▶
+                START AI AGENT</button>
+            <button onclick="stopAI()"
+                class="w-full bg-red-900/30 border border-red-900 text-red-400 font-bold text-[10px] py-2 rounded">⏹
+                STOP AI</button>
+            <div class="text-center mt-3 text-[9px] text-gray-600 font-bold flex justify-center items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-gray-600" id="sys-ready-dot"></span> SYSTEM READY
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col min-w-0">
+        <!-- HEADER -->
+        <header class="header-bar shrink-0">
+            <div class="flex bg-[#111] rounded p-0.5 border border-[#333]">
+                <button onclick="setMode('PAPER')" id="btn-paper"
+                    class="px-3 py-1 text-[10px] font-bold bg-yellow-500 text-black rounded">PAPER</button>
+                <button onclick="setMode('LIVE')" id="btn-live"
+                    class="px-3 py-1 text-[10px] font-bold text-gray-500">LIVE</button>
+            </div>
+            <div class="ticker-box">
+                <div><span class="text-gray-500">NIFTY 50</span> <span id="ticker-nifty"
+                        class="text-green-400 font-bold ml-1">...</span></div>
+                <div class="w-px h-4 bg-[#333]"></div>
+                <div><span class="text-gray-500">BANKNIFTY</span> <span id="ticker-banknifty"
+                        class="text-white font-bold ml-1">...</span></div>
+                <div class="w-px h-4 bg-[#333]"></div>
+                <div><span class="text-gray-500">VIX</span> <span id="ticker-vix"
+                        class="text-yellow-500 font-bold ml-1">--</span></div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-[9px] text-gray-500 font-bold">DELTA</div>
+                    <div id="delta-val" class="text-blue-400 mono text-xs">0</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[9px] text-gray-500 font-bold">POC</div>
+                    <div id="poc-val" class="text-purple-400 mono text-xs">--</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[9px] text-gray-500 font-bold">STATUS</div>
+                    <div id="connection-status" class="text-red-500 font-bold text-xs">○ DISCONNECTED</div>
+                </div>
+                <div class="bg-[#111] px-3 py-1 rounded border border-[#333] text-right">
+                    <div class="text-[9px] text-gray-500 font-bold">CAPITAL</div>
+                    <div id="total-capital" class="text-white mono font-bold text-sm">₹1,00,000</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 3-COLUMN GRID -->
+        <main class="flex-1 content-grid overflow-hidden">
+
+            <!-- COL 1: STRATEGIC INTELLIGENCE -->
+            <div class="bg-[#020202] border-r border-[#222] p-3 overflow-y-auto">
+                <div class="text-[10px] text-gray-500 font-bold mb-2 uppercase flex items-center gap-2">🧠 Strategic
+                    Intelligence</div>
+                <div class="agent-card border-l-2 border-green-700">
+                    <div class="flex justify-between text-[11px] font-black text-green-500 mb-1">
+                        <span>ORACLE</span><span class="text-gray-600">P6</span></div>
+                    <div class="flex justify-between gap-2">
+                        <div class="status-pill text-green-400 border border-green-900/30 w-full text-center">FRACTAL:
+                            SYNC</div>
+                        <div class="status-pill text-gray-400 border border-[#333] w-full text-center">PROPHET: WAIT
+                        </div>
+                    </div>
+                </div>
+                <div class="agent-card border-l-2 border-red-700">
+                    <div class="flex justify-between text-[11px] font-black text-red-500 mb-1">
+                        <span>PREDATOR</span><span class="text-gray-600">P7</span></div>
+                    <div class="flex justify-between gap-2">
+                        <div class="status-pill text-red-400 border border-red-900/30 w-full text-center">TRAP: SCAN
+                        </div>
+                        <div class="status-pill text-blue-400 border border-blue-900/30 w-full text-center">MACRO: NEU
+                        </div>
+                    </div>
+                </div>
+                <div class="agent-card border-l-2 border-yellow-700">
+                    <div class="flex justify-between text-[11px] font-black text-yellow-500 mb-1">
+                        <span>GRANDMASTER</span><span class="text-gray-600">P8</span></div>
+                    <div class="flex justify-between gap-2">
+                        <div class="status-pill text-yellow-500 border border-yellow-900/30 w-full text-center">SECTOR:
+                            READY</div>
+                        <div class="status-pill text-purple-400 border border-purple-900/30 w-full text-center">GAP:
+                            SYNC</div>
+                    </div>
+                </div>
+                <div class="agent-card border-l-2 border-teal-700">
+                    <div class="flex justify-between text-[11px] font-black text-teal-400 mb-1">
+                        <span>QUANTUM</span><span class="text-green-500">ACTIVE</span></div>
+                    <div class="flex justify-between text-[9px] text-gray-400 px-1"><span>DELTA: <b
+                                class="text-white">NORMAL</b></span><span>SONAR: <b
+                                class="text-blue-400">QUIET</b></span></div>
+                </div>
+                <div class="agent-card border-l-2 border-purple-700">
+                    <div class="flex justify-between text-[11px] font-black text-purple-400 mb-1">
+                        <span>MATRIX</span><span class="text-purple-500">LOADED</span></div>
+                    <div class="grid grid-cols-3 gap-1">
+                        <div class="status-pill text-gray-300">FII: NEU</div>
+                        <div class="status-pill text-gray-300">DII: BUY</div>
+                        <div class="status-pill text-red-400">N: 0%</div>
+                    </div>
+                </div>
+                <div class="agent-card border-l-2 border-orange-700">
+                    <div class="flex justify-between text-[11px] font-black text-orange-400 mb-1">
+                        <span>GALAXY</span><span class="text-orange-400">v1.2</span></div>
+                    <div class="flex justify-between text-[8px] bg-black p-1 rounded font-bold"><span
+                            class="text-blue-500">STABLE SYNC</span><span class="text-red-500">SCANNING</span></div>
+                </div>
+
+                <div class="text-[10px] text-blue-400 font-bold mt-4 mb-2 uppercase">📈 Orderflow Stats</div>
+                <div class="bg-[#111] p-2 rounded border border-[#222] space-y-1">
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-500">Candle Delta</span><span
+                            id="of-delta" class="text-blue-400 font-bold">0</span></div>
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-500">POC Price</span><span
+                            id="of-poc" class="text-purple-400 font-bold">--</span></div>
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-500">Volume</span><span
+                            id="of-vol" class="text-white font-bold">0</span></div>
+                    <div class="flex justify-between text-[10px]"><span class="text-gray-500">Levels</span><span
+                            id="of-levels" class="text-gray-400 font-bold">0</span></div>
+                </div>
+
+                <div class="text-[10px] text-red-400 font-bold mt-4 mb-2 uppercase">🚨 Liquidity Events</div>
+                <div class="bg-[#080808] border border-[#222] rounded p-2 h-24 overflow-y-auto" id="liquidity-log">
+                    <div class="text-[9px] text-gray-600 italic">Waiting for events...</div>
+                </div>
+            </div>
+
+            <!-- COL 2: MONITOR (Chart) -->
+            <div class="bg-[#000] border-r border-[#222] flex flex-col">
+                <div class="h-8 bg-[#050505] border-b border-[#222] flex items-center px-4 justify-between">
+                    <div class="flex items-center gap-2"><span
+                            class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span
+                            class="text-xs font-bold text-white">NIFTY 50 VOLUMETRIC</span></div>
+                    <div class="mono text-sm font-bold text-white" id="chart-ltp">--</div>
+                </div>
+                <div id="main-chart" class="flex-1 w-full relative">
+                    <canvas id="footprint-canvas" class="footprint-overlay"></canvas>
+                </div>
+                <div class="delta-bar">
+                    <span class="text-[9px] text-gray-500 font-bold">DELTA:</span>
+                    <div id="delta-bar-visual" class="flex-1 h-3 bg-[#222] rounded overflow-hidden relative">
+                        <div id="delta-bar-fill" class="h-full bg-blue-500 transition-all" style="width: 50%;"></div>
+                    </div>
+                    <span id="delta-bar-val" class="delta-indicator text-blue-400">0</span>
+                </div>
+
+                <!-- Replay Controls -->
+                <div class="replay-bar">
+                    <span class="text-[9px] text-gray-500 font-bold">REPLAY:</span>
+                    <button class="replay-btn" onclick="replayStart()">▶ Play</button>
+                    <button class="replay-btn" onclick="replayPause()">⏸ Pause</button>
+                    <select id="replay-speed"
+                        class="bg-[#111] border border-[#333] text-white text-[10px] rounded px-2 py-1">
+                        <option value="1">1x</option>
+                        <option value="5">5x</option>
+                        <option value="10">10x</option>
+                    </select>
+                    <span class="text-[9px] text-gray-400 ml-auto" id="replay-status">LIVE</span>
+                </div>
+
+                <div class="h-24 border-t border-[#222] bg-[#080808] flex flex-col p-2">
+                    <div class="flex items-center gap-2 mb-1"><span class="text-lg">🤖</span><span
+                            class="text-[10px] font-black text-blue-400 uppercase">Singularity</span></div>
+                    <div class="flex-1 bg-black border border-[#222] rounded p-2 text-[10px] mono text-gray-400 overflow-y-auto mb-1"
+                        id="ai-chat-output">System Online. Orderflow Engines Active.</div>
+                    <div class="flex gap-1 h-6"><input type="text"
+                            class="flex-1 bg-[#111] border border-[#333] rounded px-2 text-[10px] text-white"
+                            placeholder="Command..."><button
+                            class="bg-blue-600 text-white px-2 rounded text-[9px] font-bold">SEND</button></div>
+                </div>
+                <div class="log-panel" id="sys-logs"></div>
+            </div>
+
+            <!-- COL 3: EXECUTION -->
+            <div class="bg-[#030303] p-3 overflow-y-auto">
+                <div
+                    class="bg-[#1a1a1a] border-l-2 border-purple-500 p-2 text-[10px] font-bold flex justify-between mb-2">
+                    <span class="text-purple-400">🧪 LAB</span><span class="text-gray-500">GENETIC</span></div>
+                <button
+                    class="w-full bg-purple-900/20 border border-purple-500/50 text-purple-300 text-[10px] font-bold p-2 rounded mb-3 uppercase hover:bg-purple-900/30">🧬
+                    Run Turbo Optimizer</button>
+
+                <div class="text-[10px] text-blue-400 font-bold mb-1">📌 MARKET X-RAY</div>
+                <div
+                    class="bg-[#220505] border border-red-900 text-red-400 text-center text-[10px] font-bold p-1 rounded mb-2">
+                    STABLE</div>
+                <div class="grid grid-cols-3 gap-1 text-center bg-[#080808] p-2 rounded border border-[#222] mb-3">
+                    <div>
+                        <div class="text-[8px] text-gray-500">CALL</div>
+                        <div id="oi-call" class="text-[10px] font-bold text-white">--</div>
+                    </div>
+                    <div>
+                        <div class="text-[8px] text-gray-500">PX</div>
+                        <div id="oi-price" class="text-[10px] font-bold text-white">--</div>
+                    </div>
+                    <div>
+                        <div class="text-[8px] text-gray-500">PUT</div>
+                        <div id="oi-put" class="text-[10px] font-bold text-white">--</div>
+                    </div>
+                </div>
+
+                <div class="border border-blue-900 bg-[#050a15] p-3 rounded mb-3">
+                    <div class="flex justify-between text-[10px] font-black text-blue-400 uppercase mb-2"><span>🔍 Deep
+                            Scan</span><span id="scan-winrate" class="text-gray-400">--%</span></div>
+                    <div class="bg-black border border-blue-900/50 p-2 rounded text-center">
+                        <div class="text-[8px] text-blue-300 uppercase">Recommendation</div>
+                        <div class="text-sm font-black text-white mt-1" id="scan-rec">Run Deep Scan</div>
+                        <button onclick="runDeepScan()"
+                            class="mt-2 text-[9px] bg-blue-900 px-3 py-1 rounded text-white font-bold">SCAN</button>
+                    </div>
+                </div>
+
+                <button
+                    class="w-full bg-purple-600 text-white font-black text-[11px] p-3 rounded shadow-lg uppercase mb-1"
+                    onclick="smartExecute()">🤖 Smart Execute</button>
+                <button
+                    class="w-full bg-[#111] text-orange-500 font-bold border border-[#333] text-[10px] py-2 rounded uppercase hover:bg-[#222]"
+                    onclick="executeOrder()">⚡ Execute Now</button>
+
+                <div class="flex gap-2 mt-2 mb-3">
+                    <input type="text" id="manual-symbol" placeholder="SYMBOL"
+                        class="flex-1 bg-[#050505] border border-[#222] text-center text-white text-[10px] py-1 rounded uppercase">
+                    <input type="number" id="manual-qty" value="50"
+                        class="w-16 bg-[#050505] border border-[#222] text-center text-white text-[10px] py-1 rounded">
+                </div>
+
+                <div class="text-[10px] text-purple-400 font-bold mb-1">💠 HEXAGON INTELLIGENCE</div>
+                <div class="grid grid-cols-3 gap-1 mb-3">
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">WHALE</div>
+                        <div class="text-[9px] font-bold text-blue-400">SCAN</div>
+                    </div>
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">GAMMA</div>
+                        <div class="text-[9px] font-bold text-yellow-500">WAIT</div>
+                    </div>
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">PATTERN</div>
+                        <div class="text-[9px] font-bold text-green-500">ACTIVE</div>
+                    </div>
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">PUPPET</div>
+                        <div class="text-[9px] font-bold text-purple-400">CONN</div>
+                    </div>
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">VELOCITY</div>
+                        <div class="text-[9px] font-bold text-red-400">NORM</div>
+                    </div>
+                    <div class="hex-cell">
+                        <div class="text-[8px] text-gray-500">SKEW</div>
+                        <div class="text-[9px] font-bold text-orange-400">ACTIVE</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let ws, chart, series;
+        let lastTs = 0;
+        let currentCandle = null;
+        let currentFootprint = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            connectWS();
+            addLog("System Initialized - Level-01 Active", "sys");
+        });
+
+        function addLog(msg, type = 'info') {
+            const t = new Date().toLocaleTimeString();
+            const d = document.createElement('div');
+            d.innerHTML = `<span class="text-gray-600 mr-2">${t}</span> ${msg}`;
+            document.getElementById('sys-logs').prepend(d);
+        }
+
+        async function initChart() {
+            const c = document.getElementById('main-chart');
+            if (!c || typeof LightweightCharts === 'undefined') { addLog("Chart init failed", "error"); return; }
+            chart = LightweightCharts.createChart(c, {
+                layout: { background: { color: '#000' }, textColor: '#666' },
+                grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+                timeScale: { borderColor: '#222', timeVisible: true, secondsVisible: false }
+            });
+            series = chart.addCandlestickSeries({ upColor: '#22c55e', downColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444' });
+            window.addEventListener('resize', () => chart.resize(c.clientWidth, c.clientHeight));
+            
+            // Seed historical data
+            try {
+                const res = await fetch(`${API}/api/historical/NIFTY`);
+                const data = await res.json();
+                if (data.candles) {
+                    series.setData(data.candles);
+                    if (data.candles.length > 0) {
+                        const last = data.candles[data.candles.length - 1];
+                        lastTs = last.time;
+                        currentCandle = { ...last };
+                        document.getElementById('chart-ltp').innerText = last.close.toFixed(2);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load history", err);
+            }
+            
+            chart.timeScale().fitContent();
+            addLog("Chart Ready", "sys");
+        }
+
+        function connectWS() {
+            ws = new WebSocket('ws://127.0.0.1:8000/ws/stream');
+            ws.onopen = () => {
+                document.getElementById('connection-status').innerText = '● CONNECTED';
+                document.getElementById('connection-status').className = 'text-green-500 font-bold text-xs';
+                document.getElementById('sys-ready-dot').className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                addLog("WebSocket Stream Active", "success");
+            };
+            ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+
+                    if (msg.type === 'TICK') {
+                        const d = msg.data;
+                        if (d.symbol && (d.symbol.includes('Nifty 50') || d.symbol.includes('NIFTY 50'))) {
+                            document.getElementById('ticker-nifty').innerText = d.ltp.toFixed(2);
+                            document.getElementById('chart-ltp').innerText = d.ltp.toFixed(2);
+                            updateChart(d.ltp);
+                        }
+                        if (d.symbol && d.symbol.includes('Bank')) {
+                            document.getElementById('ticker-banknifty').innerText = d.ltp.toFixed(2);
+                        }
+                        if (d.symbol && d.symbol.includes('VIX')) {
+                            document.getElementById('ticker-vix').innerText = d.ltp.toFixed(2);
+                        }
+                    }
+
+                    // FOOTPRINT DATA
+                    if (msg.type === 'FOOTPRINT') {
+                        const fp = msg.data;
+                        currentFootprint = fp;
+                        document.getElementById('of-delta').innerText = fp.delta || 0;
+                        document.getElementById('of-poc').innerText = fp.poc ? fp.poc.toFixed(2) : '--';
+                        document.getElementById('of-vol').innerText = fp.volume || 0;
+                        document.getElementById('of-levels').innerText = Object.keys(fp.levels || {}).length;
+
+                        // Update header stats
+                        document.getElementById('delta-val').innerText = fp.delta || 0;
+                        document.getElementById('poc-val').innerText = fp.poc ? fp.poc.toFixed(2) : '--';
+
+                        // Delta bar visualization
+                        const delta = fp.delta || 0;
+                        const pct = Math.min(100, Math.max(0, 50 + (delta / 100)));
+                        document.getElementById('delta-bar-fill').style.width = pct + '%';
+                        document.getElementById('delta-bar-fill').className = `h-full transition-all ${delta >= 0 ? 'bg-green-500' : 'bg-red-500'}`;
+                        document.getElementById('delta-bar-val').innerText = delta;
+                        document.getElementById('delta-bar-val').className = `delta-indicator ${delta >= 0 ? 'text-green-400' : 'text-red-400'}`;
+                    }
+
+                    // LIQUIDITY EVENTS
+                    if (msg.type === 'LIQUIDITY') {
+                        const liq = msg.data;
+                        const logEl = document.getElementById('liquidity-log');
+                        const entry = document.createElement('div');
+                        entry.className = 'text-[9px] text-red-400 mb-1';
+                        entry.innerHTML = `<b>${liq.type}</b> ${liq.symbol} ${liq.qty}@${liq.price} [${liq.significance}]`;
+                        logEl.prepend(entry);
+                        addLog(`LIQUIDITY: ${liq.type} detected`, 'warn');
+                    }
+
+                } catch (err) { console.error("WS Parse Error", err); }
+            };
+            ws.onclose = () => {
+                document.getElementById('connection-status').innerText = '○ DISCONNECTED';
+                document.getElementById('connection-status').className = 'text-red-500 font-bold text-xs';
+                addLog("WS Disconnected. Retrying...", "error");
+                setTimeout(connectWS, 3000);
+            };
+            ws.onerror = (err) => { addLog("WS Error: " + err, "error"); };
+        }
+
+        function updateChart(price) {
+            if (!series) return;
+            const now = Math.floor(Date.now() / 1000);
+            const ts = now - (now % 60);
+            if (ts !== lastTs) {
+                currentCandle = { time: ts, open: price, high: price, low: price, close: price };
+                series.update(currentCandle);
+                lastTs = ts;
+            } else if (currentCandle) {
+                currentCandle.high = Math.max(currentCandle.high, price);
+                currentCandle.low = Math.min(currentCandle.low, price);
+                currentCandle.close = price;
+                series.update(currentCandle);
+            }
+        }
+
+        // Replay Controls
+        function replayStart() {
+            document.getElementById('replay-status').innerText = 'PLAYING';
+            addLog("Replay Started", "sys");
+            // TODO: Call replay API
+        }
+        function replayPause() {
+            document.getElementById('replay-status').innerText = 'PAUSED';
+            addLog("Replay Paused", "sys");
+        }
+
+        async function runDeepScan() {
+            addLog("Scanning...", "sys");
+            try {
+                const r = await fetch(`${API}/analyze/deep`, { method: 'POST' });
+                const d = await r.json();
+                if (d.status === 'Success') {
+                    const m = d.macro_scan;
+                    document.getElementById('scan-winrate').innerText = m.win_rate + '%';
+                    document.getElementById('scan-rec').innerText = m.recommendation;
+                    document.getElementById('manual-symbol').value = m.recommended_contract || '';
+                    addLog(`Scan: ${m.recommendation}`, 'success');
+                }
+            } catch (e) { addLog("Scan Error", "error"); }
+        }
+
+        function startAI() { fetch(`${API}/start`, { method: 'POST' }); addLog("AI Starting...", "sys"); }
+        function stopAI() { fetch(`${API}/stop`, { method: 'POST' }); addLog("AI Stopping...", "sys"); }
+        function setMode(m) { fetch(`${API}/config?mode=${m}`, { method: 'POST' }); addLog(`Mode: ${m}`, "sys"); }
+        function smartExecute() { addLog("Smart Exec Started", "sys"); }
+        function executeOrder() { addLog("Executing...", "warn"); }
+    </script>
+</body>
+
+</html>

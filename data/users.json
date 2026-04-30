@@ -1,0 +1,22 @@
+{
+  "user_31d9745f80e9240c": {
+    "id": "user_31d9745f80e9240c",
+    "email": "demo@test.com",
+    "password_hash": "ba9377d1e94e78a4594a3edb26e579df97abb0545f09ae0be4228d611f3df2c0",
+    "name": "Demo User",
+    "created_at": "2026-01-30T16:16:45.509773",
+    "last_login": "2026-01-30T16:19:23.126817",
+    "is_active": true,
+    "role": "trader"
+  },
+  "user_778d81b73f8f9c18": {
+    "id": "user_778d81b73f8f9c18",
+    "email": "admin@marketpilot.com",
+    "password_hash": "3554d29a535fb71792929dfa9b7b7a090014aaa0072b6c506afb7d62d9ea7e95",
+    "name": "Admin",
+    "created_at": "2026-02-03T14:44:29.037867",
+    "last_login": "2026-02-03T14:47:15.724742",
+    "is_active": true,
+    "role": "trader"
+  }
+}

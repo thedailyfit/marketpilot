@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+websockets
+psutil
+requests
+numpy
+pandas
+upstox-python-sdk
