@@ -521,7 +521,8 @@
         }
 
         function connectWS() {
-            ws = new WebSocket('ws://127.0.0.1:8000/ws/stream');
+            const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${wsProto}//${window.location.host}/ws/stream`);
             ws.onopen = () => {
                 document.getElementById('connection-status').innerText = '● CONNECTED';
                 document.getElementById('connection-status').className = 'text-green-500 font-bold text-xs';

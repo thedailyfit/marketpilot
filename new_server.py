@@ -188,6 +188,10 @@ async def get_login_page():
 
 @app.get("/dashboard")
 async def get_dashboard():
+    return FileResponse("dashboard/ai_command.html")
+
+@app.get("/dashboard/classic")
+async def get_dashboard_classic():
     return FileResponse("dashboard/index.html")
 
 @app.get("/dashboard/ai_command.html")
