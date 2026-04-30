@@ -493,6 +493,29 @@ async def execute_now():
     """Trigger immediate execution market order."""
     return JSONResponse(content={"status": "Executed", "message": "Market order sent to broker."})
 
+@app.get("/api/funds")
+async def get_live_funds():
+    """Fetch real-time account funds from Upstox."""
+    try:
+        if not sys_config.ACCESS_TOKEN:
+            return JSONResponse(content={"status": "error", "message": "No Upstox Token", "balance": 0.0})
+            
+        import upstox_client
+        config = upstox_client.Configuration()
+        config.access_token = sys_config.ACCESS_TOKEN
+        client = upstox_client.ApiClient(config)
+        user_api = upstox_client.UserApi(client)
+        
+        resp = user_api.get_user_fund_margin(segment="SEC")
+        
+        if resp and resp.data and hasattr(resp.data, 'equity'):
+            available = resp.data.equity.available_margin
+            return JSONResponse(content={"status": "success", "balance": float(available)})
+        return JSONResponse(content={"status": "error", "message": "Could not parse balance", "balance": 0.0})
+    except Exception as e:
+        logger.error(f"Funds fetch error: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e), "balance": 0.0})
+
 @app.get("/api/history")
 async def get_history(symbol: str, interval: str = "1minute"):
     """Fetch historical candle data from Upstox for Chart."""

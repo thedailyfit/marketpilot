@@ -829,7 +829,7 @@
 
         function startAI() { fetch(`${API}/start`, { method: 'POST' }); addLog("AI Starting...", "sys"); }
         function stopAI() { fetch(`${API}/stop`, { method: 'POST' }); addLog("AI Stopping...", "sys"); }
-        function setMode(m) { 
+        async function setMode(m) { 
             fetch(`${API}/config?mode=${m}`, { method: 'POST' }); 
             addLog(`Mode: ${m}`, "sys"); 
             
@@ -842,14 +842,26 @@
                 btnPaper.className = 'px-3 py-1 text-[10px] font-bold bg-yellow-500 text-black rounded';
                 btnLive.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
                 capitalLabel.innerText = 'PAPER BALANCE';
-                capitalVal.innerText = '₹1,00,000';
+                capitalVal.innerText = '₹1,00,000.00';
             } else {
                 btnLive.className = 'px-3 py-1 text-[10px] font-bold bg-red-500 text-white rounded';
                 btnPaper.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
                 capitalLabel.innerText = 'LIVE BALANCE';
                 capitalVal.innerText = 'Fetching...';
-                // Mock fetch for live broker balance
-                setTimeout(() => { capitalVal.innerText = '₹24,500.00'; }, 800);
+                
+                try {
+                    const r = await fetch(`${API}/api/funds`);
+                    const data = await r.json();
+                    if(data.status === 'success') {
+                        capitalVal.innerText = '₹' + data.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    } else {
+                        capitalVal.innerText = '₹0.00';
+                        addLog(`Funds fetch failed: ${data.message || 'Unknown error'}`, "error");
+                    }
+                } catch(e) {
+                    capitalVal.innerText = 'ERROR';
+                    addLog("Network error fetching funds", "error");
+                }
             }
         }
         async function smartExecute() { 
