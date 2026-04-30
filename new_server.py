@@ -32,6 +32,11 @@ logger.addHandler(QueueHandler())
 
 # --- APP SETUP ---
 app = FastAPI()
+
+@app.get("/")
+async def root():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/login")
 app.mount("/dashboard/static", StaticFiles(directory="dashboard/static"), name="static")
 
 # Trading mode manager
