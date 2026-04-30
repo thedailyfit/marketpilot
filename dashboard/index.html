@@ -900,8 +900,8 @@
         <div class="header-status">
             <div class="market-info">
                 <span style="color: var(--text-muted); font-size: 12px;">NIFTY 50</span>
-                <span class="market-price" id="current-price">23,456.75</span>
-                <span class="market-change up" id="price-change">+127.50 (+0.54%)</span>
+                <span class="market-price" id="current-price">--</span>
+                <span class="market-change" id="price-change">Waiting for market...</span>
             </div>
 
             <select class="symbol-select" id="symbol-select">
@@ -910,9 +910,9 @@
                 <option value="FINNIFTY">FINNIFTY</option>
             </select>
 
-            <div class="status-badge online" id="connection-status">
+            <div class="status-badge" id="connection-status" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
                 <span class="status-dot"></span>
-                <span id="status-text">Connected</span>
+                <span id="status-text">Connecting...</span>
             </div>
         </div>
     </header>
@@ -946,19 +946,19 @@
                 <div class="card-body">
                     <div class="metrics-grid">
                         <div class="metric-item">
-                            <div class="metric-value positive" id="total-pnl">₹12,450</div>
+                            <div class="metric-value neutral" id="total-pnl">₹0</div>
                             <div class="metric-label">Total P&L</div>
                         </div>
                         <div class="metric-item">
-                            <div class="metric-value neutral" id="win-rate">68%</div>
+                            <div class="metric-value neutral" id="win-rate">--</div>
                             <div class="metric-label">Win Rate</div>
                         </div>
                         <div class="metric-item">
-                            <div class="metric-value neutral" id="sharpe-ratio">1.85</div>
+                            <div class="metric-value neutral" id="sharpe-ratio">--</div>
                             <div class="metric-label">Sharpe Ratio</div>
                         </div>
                         <div class="metric-item">
-                            <div class="metric-value negative" id="max-drawdown">-2.3%</div>
+                            <div class="metric-value neutral" id="max-drawdown">--</div>
                             <div class="metric-label">Max Drawdown</div>
                         </div>
                     </div>
@@ -1017,18 +1017,16 @@
                     <div class="card-title">🧠 AI Prediction</div>
                 </div>
                 <div class="ai-recommendation">
-                    <div class="ai-badge buy" id="ai-signal">BUY</div>
+                    <div class="ai-badge" id="ai-signal" style="background: rgba(99,102,241,0.2); color: #818cf8;">WAIT</div>
                     <div style="color: var(--text-secondary); font-size: 13px;">
                         AI Confidence
                     </div>
                     <div class="ai-confidence-bar">
-                        <div class="ai-confidence-fill" id="ai-confidence" style="width: 78%"></div>
+                        <div class="ai-confidence-fill" id="ai-confidence" style="width: 0%"></div>
                     </div>
-                    <div style="font-size: 24px; font-weight: 700;" id="ai-confidence-text">78%</div>
+                    <div style="font-size: 24px; font-weight: 700;" id="ai-confidence-text">--</div>
                     <div class="ai-factors" id="ai-factors">
-                        <span class="ai-factor">RSI Oversold</span>
-                        <span class="ai-factor">VIX Low</span>
-                        <span class="ai-factor">PCR Bullish</span>
+                        <span class="ai-factor">Awaiting signal...</span>
                     </div>
                 </div>
             </div>
@@ -1055,19 +1053,19 @@
                     <div class="greeks-grid">
                         <div class="greek-item">
                             <div class="greek-name">Delta</div>
-                            <div class="greek-value" id="greek-delta">0.52</div>
+                            <div class="greek-value" id="greek-delta">--</div>
                         </div>
                         <div class="greek-item">
                             <div class="greek-name">Gamma</div>
-                            <div class="greek-value" id="greek-gamma">0.023</div>
+                            <div class="greek-value" id="greek-gamma">--</div>
                         </div>
                         <div class="greek-item">
                             <div class="greek-name">Theta</div>
-                            <div class="greek-value" id="greek-theta">-12.5</div>
+                            <div class="greek-value" id="greek-theta">--</div>
                         </div>
                         <div class="greek-item">
                             <div class="greek-name">Vega</div>
-                            <div class="greek-value" id="greek-vega">4.2</div>
+                            <div class="greek-value" id="greek-vega">--</div>
                         </div>
                     </div>
                 </div>
@@ -1082,11 +1080,11 @@
                     <div class="greeks-grid">
                         <div class="greek-item">
                             <div class="greek-name">India VIX</div>
-                            <div class="greek-value" id="india-vix" style="color: var(--success);">14.2</div>
+                            <div class="greek-value" id="india-vix" style="color: var(--success);">--</div>
                         </div>
                         <div class="greek-item">
                             <div class="greek-name">PCR</div>
-                            <div class="greek-value" id="pcr-value">1.12</div>
+                            <div class="greek-value" id="pcr-value">--</div>
                         </div>
                     </div>
                 </div>
@@ -1107,30 +1105,30 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">🛡️ Risk Dashboard</div>
-                <span class="streak-badge hot" id="streak-badge">🔥 3 Win Streak</span>
+                <span class="streak-badge cold" id="streak-badge">⏳ No trades yet</span>
             </div>
             <div class="card-body">
                 <div class="risk-dashboard">
                     <div class="risk-item success" id="risk-pnl-item">
-                        <div class="risk-value positive" id="daily-pnl">₹2,450</div>
+                        <div class="risk-value neutral" id="daily-pnl">₹0</div>
                         <div class="risk-label">Today's P&L</div>
                         <div class="risk-bar">
-                            <div class="risk-bar-fill" style="width: 70%; background: var(--success);"></div>
+                            <div class="risk-bar-fill" style="width: 0%; background: var(--success);"></div>
                         </div>
                     </div>
                     <div class="risk-item" id="risk-remaining-item">
-                        <div class="risk-value" id="risk-remaining" style="color: var(--accent-secondary);">82%</div>
+                        <div class="risk-value" id="risk-remaining" style="color: var(--accent-secondary);">100%</div>
                         <div class="risk-label">Risk Available</div>
                         <div class="risk-bar">
                             <div class="risk-bar-fill" id="risk-bar"
-                                style="width: 82%; background: var(--accent-primary);"></div>
+                                style="width: 100%; background: var(--accent-primary);"></div>
                         </div>
                     </div>
                     <div class="risk-item" id="risk-drawdown-item">
-                        <div class="risk-value negative" id="daily-drawdown">-0.8%</div>
+                        <div class="risk-value neutral" id="daily-drawdown">0%</div>
                         <div class="risk-label">Max Drawdown</div>
                         <div class="risk-bar">
-                            <div class="risk-bar-fill" style="width: 8%; background: var(--danger);"></div>
+                            <div class="risk-bar-fill" style="width: 0%; background: var(--danger);"></div>
                         </div>
                     </div>
                 </div>
@@ -1156,31 +1154,31 @@
                     <div class="strategy-item">
                         <div class="strategy-name">Theta Decay</div>
                         <div class="strategy-bar-container">
-                            <div class="strategy-bar theta" id="theta-bar" style="width: 75%;">₹4,200</div>
+                            <div class="strategy-bar theta" id="theta-bar" style="width: 0%;">₹0</div>
                         </div>
                         <div class="strategy-stats">
-                            <div class="strategy-pnl pnl-positive">+₹4,200</div>
-                            <div class="strategy-win-rate">18 trades • 72%</div>
+                                <div class="strategy-pnl">₹0</div>
+                                <div class="strategy-win-rate">0 trades</div>
                         </div>
                     </div>
                     <div class="strategy-item">
                         <div class="strategy-name">ORB Breakout</div>
                         <div class="strategy-bar-container">
-                            <div class="strategy-bar orb" id="orb-bar" style="width: 45%;">₹1,850</div>
+                            <div class="strategy-bar orb" id="orb-bar" style="width: 0%;">₹0</div>
                         </div>
                         <div class="strategy-stats">
-                            <div class="strategy-pnl pnl-positive">+₹1,850</div>
-                            <div class="strategy-win-rate">8 trades • 62%</div>
+                                <div class="strategy-pnl">₹0</div>
+                                <div class="strategy-win-rate">0 trades</div>
                         </div>
                     </div>
                     <div class="strategy-item">
                         <div class="strategy-name">OI Directional</div>
                         <div class="strategy-bar-container">
-                            <div class="strategy-bar oi" id="oi-bar" style="width: 30%;">₹920</div>
+                            <div class="strategy-bar oi" id="oi-bar" style="width: 0%;">₹0</div>
                         </div>
                         <div class="strategy-stats">
-                            <div class="strategy-pnl pnl-positive">+₹920</div>
-                            <div class="strategy-win-rate">5 trades • 60%</div>
+                                <div class="strategy-pnl">₹0</div>
+                                <div class="strategy-win-rate">0 trades</div>
                         </div>
                     </div>
                 </div>
@@ -1195,37 +1193,10 @@
             </div>
             <div class="card-body" style="padding: 12px;">
                 <div class="journal-list" id="journal-list">
-                    <div class="journal-item">
-                        <div class="journal-icon win">✅</div>
-                        <div class="journal-details">
-                            <div class="journal-title">NIFTY 23500 CE</div>
-                            <div class="journal-meta">Theta Decay • 14:32 → 14:58</div>
-                        </div>
-                        <div class="journal-pnl pnl-positive">+₹850</div>
-                    </div>
-                    <div class="journal-item">
-                        <div class="journal-icon win">✅</div>
-                        <div class="journal-details">
-                            <div class="journal-title">NIFTY 23450 PE</div>
-                            <div class="journal-meta">ORB • 09:35 → 10:12</div>
-                        </div>
-                        <div class="journal-pnl pnl-positive">+₹1,200</div>
-                    </div>
-                    <div class="journal-item">
-                        <div class="journal-icon loss">❌</div>
-                        <div class="journal-details">
-                            <div class="journal-title">BANKNIFTY 49000 CE</div>
-                            <div class="journal-meta">OI Dir • 11:15 → 11:32</div>
-                        </div>
-                        <div class="journal-pnl pnl-negative">-₹400</div>
-                    </div>
-                    <div class="journal-item">
-                        <div class="journal-icon win">✅</div>
-                        <div class="journal-details">
-                            <div class="journal-title">NIFTY 23400 CE</div>
-                            <div class="journal-meta">Theta Decay • 13:05 → 13:45</div>
-                        </div>
-                        <div class="journal-pnl pnl-positive">+₹800</div>
+                    <div class="empty-state">
+                        <div class="empty-icon">📖</div>
+                        <div>No trades executed today</div>
+                        <div style="font-size: 11px; margin-top: 4px;">Trades will appear here when the AI executes orders</div>
                     </div>
                 </div>
             </div>
@@ -1390,35 +1361,7 @@ async function loadHistoricalData() {
             mainChart.timeScale().fitContent();
         }
     } catch (err) {
-        console.log("Historical data not available yet, generating sample data...");
-        generateSampleData();
-    }
-}
-
-function generateSampleData() {
-    // Generate realistic sample candles so chart is never empty
-    const candles = [];
-    let price = 24250;
-    const now = Math.floor(Date.now() / 1000);
-    const startTime = now - (200 * 300); // 200 candles, 5 min each
-    
-    for (let i = 0; i < 200; i++) {
-        const time = startTime + (i * 300);
-        const change = (Math.random() - 0.48) * 50;
-        const open = price;
-        price += change;
-        const high = Math.max(open, price) + Math.random() * 20;
-        const low = Math.min(open, price) - Math.random() * 20;
-        candles.push({ time, open: +open.toFixed(2), high: +high.toFixed(2), low: +low.toFixed(2), close: +price.toFixed(2) });
-    }
-    
-    if (candleSeries) {
-        candleSeries.setData(candles);
-        const last = candles[candles.length - 1];
-        lastChartTs = last.time;
-        currentChartCandle = { ...last };
-        updatePrice(last.close, 127.50, 0.54);
-        mainChart.timeScale().fitContent();
+        console.log("Historical data not available yet. Chart will populate when market data streams in.");
     }
 }
 
@@ -1525,19 +1468,33 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     connectWS();
     
-    // Simulate live market feel with periodic updates
-    setInterval(() => {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            // Generate micro price movement for visual activity
-            if (currentChartCandle) {
-                const microChange = (Math.random() - 0.5) * 5;
-                const newPrice = currentChartCandle.close + microChange;
-                updateChart(newPrice);
-                updatePrice(newPrice, newPrice - 24250, ((newPrice - 24250) / 24250) * 100);
-            }
-        }
-    }, 2000);
+    // Fetch real performance data from backend
+    fetchPerformanceData();
 });
+
+async function fetchPerformanceData() {
+    try {
+        const res = await fetch(`${API}/api/trades`);
+        const trades = await res.json();
+        if (trades && trades.length > 0) {
+            let totalPnl = 0;
+            let wins = 0;
+            trades.forEach(t => {
+                const pnl = t.pnl || 0;
+                totalPnl += pnl;
+                if (pnl > 0) wins++;
+            });
+            const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
+            const pnlEl = document.getElementById('total-pnl');
+            const wrEl = document.getElementById('win-rate');
+            if (pnlEl) {
+                pnlEl.textContent = `₹${totalPnl.toLocaleString('en-IN')}`;
+                pnlEl.className = `metric-value ${totalPnl >= 0 ? 'positive' : 'negative'}`;
+            }
+            if (wrEl) wrEl.textContent = `${winRate}%`;
+        }
+    } catch (e) { /* Backend not returning trades yet */ }
+}
 
 window.addEventListener('resize', () => {
     if (mainChart) {
