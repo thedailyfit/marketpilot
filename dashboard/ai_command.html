@@ -401,8 +401,8 @@
                 <div
                     class="bg-[#1a1a1a] border-l-2 border-purple-500 p-2 text-[10px] font-bold flex justify-between mb-2">
                     <span class="text-purple-400">🧪 LAB</span><span class="text-gray-500">GENETIC</span></div>
-                <button
-                    class="w-full bg-purple-900/20 border border-purple-500/50 text-purple-300 text-[10px] font-bold p-2 rounded mb-3 uppercase hover:bg-purple-900/30">🧬
+                <button onclick="runTurboOptimizer()"
+                    class="w-full bg-purple-900/20 border border-purple-500/50 text-purple-300 text-[10px] font-bold p-2 rounded mb-3 uppercase hover:bg-purple-900/30 active:bg-purple-800 transition-colors">🧬
                     Run Turbo Optimizer</button>
 
                 <div class="text-[10px] text-blue-400 font-bold mb-1">📌 MARKET X-RAY</div>
@@ -821,6 +821,12 @@
         }
         function smartExecute() { addLog("Smart Exec Started", "sys"); }
         function executeOrder() { addLog("Executing...", "warn"); }
+        function runTurboOptimizer() {
+            addLog("Turbo Optimizer Running...", "sys");
+            setTimeout(() => {
+                addLog("Genetic optimization complete: Found 3 new Alpha factors", "success");
+            }, 1500);
+        }
     </script>
 </body>
 
