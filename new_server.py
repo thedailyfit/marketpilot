@@ -1510,7 +1510,7 @@ def analyze_strategy():
     return {"status": "Offline"}
 
 @app.get("/history")
-def get_historical_data(symbol: str):
+def get_historical_data_legacy(symbol: str):
     """Returns historical candles for charting."""
     if supervisor.is_running:
         return supervisor.market_agent.get_history(symbol)
