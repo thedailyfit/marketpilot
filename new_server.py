@@ -217,6 +217,105 @@ async def get_trades_data():
         return JSONResponse(content=supervisor.execution_agent.trade_history)
     return JSONResponse(content=[])
 
+@app.get("/api/historical/{symbol}")
+async def get_historical_data(symbol: str):
+    """Fetch real historical candle data from Upstox API."""
+    import requests as req
+    from datetime import datetime, timedelta
+    
+    # Map symbol names to Upstox instrument keys
+    instrument_map = {
+        "NIFTY": "NSE_INDEX|Nifty 50",
+        "BANKNIFTY": "NSE_INDEX|Nifty Bank",
+        "FINNIFTY": "NSE_INDEX|Nifty Fin Service",
+    }
+    
+    instrument_key = instrument_map.get(symbol.upper(), "NSE_INDEX|Nifty 50")
+    
+    # Date range: last 5 trading days
+    to_date = datetime.now().strftime("%Y-%m-%d")
+    from_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    try:
+        url = "https://api.upstox.com/v2/historical-candle/intraday"
+        url_daily = f"https://api.upstox.com/v2/historical-candle/{instrument_key}/5minute/{to_date}/{from_date}"
+        
+        headers = {
+            "Accept": "application/json",
+        }
+        
+        # Try intraday first (today's data)
+        intraday_url = f"https://api.upstox.com/v2/historical-candle/intraday/{instrument_key}/5minute"
+        res = req.get(intraday_url, headers=headers, timeout=10)
+        
+        candles = []
+        
+        if res.status_code == 200:
+            data = res.json()
+            raw_candles = data.get("data", {}).get("candles", [])
+            
+            for c in raw_candles:
+                # Upstox format: [timestamp, open, high, low, close, volume, oi]
+                try:
+                    ts = c[0]
+                    # Parse ISO timestamp to unix
+                    if isinstance(ts, str):
+                        dt = datetime.fromisoformat(ts.replace("+05:30", "+05:30"))
+                        unix_ts = int(dt.timestamp())
+                    else:
+                        unix_ts = int(ts)
+                    
+                    candles.append({
+                        "time": unix_ts,
+                        "open": float(c[1]),
+                        "high": float(c[2]),
+                        "low": float(c[3]),
+                        "close": float(c[4]),
+                    })
+                except Exception:
+                    continue
+        
+        # Also fetch multi-day historical data
+        res2 = req.get(url_daily, headers=headers, timeout=10)
+        if res2.status_code == 200:
+            data2 = res2.json()
+            raw_candles2 = data2.get("data", {}).get("candles", [])
+            
+            for c in raw_candles2:
+                try:
+                    ts = c[0]
+                    if isinstance(ts, str):
+                        dt = datetime.fromisoformat(ts.replace("+05:30", "+05:30"))
+                        unix_ts = int(dt.timestamp())
+                    else:
+                        unix_ts = int(ts)
+                    
+                    candles.append({
+                        "time": unix_ts,
+                        "open": float(c[1]),
+                        "high": float(c[2]),
+                        "low": float(c[3]),
+                        "close": float(c[4]),
+                    })
+                except Exception:
+                    continue
+        
+        # Sort by time ascending and deduplicate
+        candles.sort(key=lambda x: x["time"])
+        seen = set()
+        unique_candles = []
+        for c in candles:
+            if c["time"] not in seen:
+                seen.add(c["time"])
+                unique_candles.append(c)
+        
+        logger.info(f"Historical data: {len(unique_candles)} candles fetched for {symbol}")
+        return JSONResponse(content={"candles": unique_candles, "symbol": symbol})
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch historical data: {e}")
+        return JSONResponse(content={"candles": [], "symbol": symbol, "error": str(e)})
+
 @app.get("/api/alerts")
 async def get_alerts():
     """Returns AI-generated market alerts from real-time analysis."""
