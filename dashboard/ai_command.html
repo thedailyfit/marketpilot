@@ -423,6 +423,71 @@
                     </div>
                 </div>
 
+                <!-- Sliders for Stop Loss and Profit Target -->
+                <div class="bg-[#0a0a0a] border border-[#222] p-2 rounded mb-3">
+                    <div class="text-[9px] text-gray-400 font-bold mb-2 uppercase">Risk & Reward Settings</div>
+                    
+                    <div class="mb-2">
+                        <div class="flex justify-between text-[8px] text-gray-500 mb-1">
+                            <span>Max Stop Loss</span>
+                            <span id="max-sl-val" class="text-red-400">-5%</span>
+                        </div>
+                        <input type="range" min="1" max="20" value="5" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('max-sl-val').innerText = '-' + this.value + '%'">
+                    </div>
+                    <div class="mb-2">
+                        <div class="flex justify-between text-[8px] text-gray-500 mb-1">
+                            <span>Min Stop Loss</span>
+                            <span id="min-sl-val" class="text-red-400">-2%</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="2" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('min-sl-val').innerText = '-' + this.value + '%'">
+                    </div>
+                    <div class="mb-2">
+                        <div class="flex justify-between text-[8px] text-gray-500 mb-1">
+                            <span>Max Profit Target</span>
+                            <span id="max-tp-val" class="text-green-400">+15%</span>
+                        </div>
+                        <input type="range" min="5" max="50" value="15" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('max-tp-val').innerText = '+' + this.value + '%'">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[8px] text-gray-500 mb-1">
+                            <span>Min Profit Target</span>
+                            <span id="min-tp-val" class="text-green-400">+5%</span>
+                        </div>
+                        <input type="range" min="1" max="20" value="5" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('min-tp-val').innerText = '+' + this.value + '%'">
+                    </div>
+                </div>
+
+                <!-- Suggested Trades -->
+                <div class="bg-[#050a15] border border-blue-900 p-2 rounded mb-3">
+                    <div class="text-[9px] text-blue-400 font-bold mb-2 uppercase flex justify-between">
+                        <span>🎯 Target Profit Agents</span>
+                        <span class="text-green-400 animate-pulse">Scanning...</span>
+                    </div>
+                    <div class="space-y-1" id="suggested-trades">
+                        <div class="bg-black border border-[#222] p-1.5 rounded flex justify-between items-center cursor-pointer hover:border-blue-500 transition-colors">
+                            <div>
+                                <div class="text-[10px] font-bold text-white">NIFTY 24000 CE</div>
+                                <div class="text-[8px] text-gray-500">Optimal Entry: ₹145 | Lots: 4</div>
+                            </div>
+                            <div class="text-[9px] text-green-400 font-bold">92% Win</div>
+                        </div>
+                        <div class="bg-black border border-[#222] p-1.5 rounded flex justify-between items-center cursor-pointer hover:border-blue-500 transition-colors">
+                            <div>
+                                <div class="text-[10px] font-bold text-white">NIFTY 24100 CE</div>
+                                <div class="text-[8px] text-gray-500">Optimal Entry: ₹95 | Lots: 6</div>
+                            </div>
+                            <div class="text-[9px] text-green-400 font-bold">88% Win</div>
+                        </div>
+                        <div class="bg-black border border-[#222] p-1.5 rounded flex justify-between items-center cursor-pointer hover:border-blue-500 transition-colors">
+                            <div>
+                                <div class="text-[10px] font-bold text-white">BANKNIFTY 54900 CE</div>
+                                <div class="text-[8px] text-gray-500">Optimal Entry: ₹210 | Lots: 2</div>
+                            </div>
+                            <div class="text-[9px] text-green-400 font-bold">85% Win</div>
+                        </div>
+                    </div>
+                </div>
+
                 <button
                     class="w-full bg-purple-600 text-white font-black text-[11px] p-3 rounded shadow-lg uppercase mb-1"
                     onclick="smartExecute()">🤖 Smart Execute</button>
