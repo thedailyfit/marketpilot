@@ -206,6 +206,18 @@
             <div class="nav-item"><span>📜</span> Order History</div>
             <div class="nav-item"><span>🔍</span> Deep Scan</div>
             <div class="nav-item"><span>⚙️</span> Settings</div>
+            
+            <div class="mt-4 border-t border-[#222] pt-4">
+                <div class="text-[9px] text-gray-500 font-bold mb-2 uppercase px-2">Watchlist</div>
+                <div class="flex gap-1 mb-2 px-2">
+                    <input type="text" id="symbol-search" placeholder="Search CE/PE..." class="w-full bg-[#111] border border-[#333] text-[9px] p-1.5 rounded text-white uppercase focus:border-blue-500 outline-none">
+                    <button onclick="addSymbol()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 rounded text-[10px] font-bold">+</button>
+                </div>
+                <div id="watchlist-items" class="space-y-1">
+                    <div class="nav-item active !border-l-blue-500 text-blue-400" onclick="changeChart('NIFTY', this)" data-symbol="NIFTY">📊 NIFTY 50</div>
+                    <div class="nav-item" onclick="changeChart('BANKNIFTY', this)" data-symbol="BANKNIFTY">📊 BANKNIFTY</div>
+                </div>
+            </div>
         </div>
         <div class="mt-auto border-t border-[#222] pt-4">
             <button onclick="startAI()"
@@ -343,7 +355,7 @@
                 <div class="h-8 bg-[#050505] border-b border-[#222] flex items-center px-4 justify-between">
                     <div class="flex items-center gap-2"><span
                             class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span
-                            class="text-xs font-bold text-white">NIFTY 50 VOLUMETRIC</span></div>
+                            id="chart-title-lbl" class="text-xs font-bold text-white">NIFTY 50 VOLUMETRIC</span></div>
                     <div class="mono text-sm font-bold text-white" id="chart-ltp">--</div>
                 </div>
                 <div id="main-chart" class="flex-1 w-full relative">
@@ -534,11 +546,12 @@
     </div>
 
     <script>
-        const API = 'http://127.0.0.1:8000';
+        const API = window.location.origin;
         let ws, chart, series;
         let lastTs = 0;
         let currentCandle = null;
         let currentFootprint = null;
+        let currentSymbol = 'NIFTY';
 
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
@@ -565,8 +578,12 @@
             window.addEventListener('resize', () => chart.resize(c.clientWidth, c.clientHeight));
             
             // Seed historical data
+            loadHistoricalData(currentSymbol);
+        }
+
+        async function loadHistoricalData(sym) {
             try {
-                const res = await fetch(`${API}/api/historical/NIFTY`);
+                const res = await fetch(`${API}/api/historical/${sym}`);
                 const data = await res.json();
                 if (data.candles) {
                     series.setData(data.candles);
@@ -575,14 +592,53 @@
                         lastTs = last.time;
                         currentCandle = { ...last };
                         document.getElementById('chart-ltp').innerText = last.close.toFixed(2);
+                    } else {
+                        // Empty chart if no data
+                        series.setData([]);
+                        document.getElementById('chart-ltp').innerText = '--';
                     }
                 }
+                chart.timeScale().fitContent();
+                addLog(`Chart Ready: ${sym}`, "sys");
             } catch (err) {
                 console.error("Failed to load history", err);
+                series.setData([]);
+            }
+        }
+
+        function changeChart(sym, el) {
+            currentSymbol = sym;
+            document.getElementById('chart-title-lbl').innerText = sym + ' VOLUMETRIC';
+            
+            // Update active state in watchlist
+            const items = document.querySelectorAll('#watchlist-items .nav-item');
+            items.forEach(i => {
+                i.classList.remove('active', '!border-l-blue-500', 'text-blue-400');
+            });
+            if(el) {
+                el.classList.add('active', '!border-l-blue-500', 'text-blue-400');
             }
             
-            chart.timeScale().fitContent();
-            addLog("Chart Ready", "sys");
+            loadHistoricalData(sym);
+        }
+
+        function addSymbol() {
+            const input = document.getElementById('symbol-search');
+            let sym = input.value.trim().toUpperCase();
+            if(!sym) return;
+            
+            // Add to watchlist
+            const list = document.getElementById('watchlist-items');
+            const div = document.createElement('div');
+            div.className = 'nav-item';
+            div.innerHTML = `📊 ${sym}`;
+            div.onclick = function() { changeChart(sym, this); };
+            
+            // Prepend just below NIFTY/BANKNIFTY defaults
+            list.appendChild(div);
+            
+            input.value = '';
+            changeChart(sym, div);
         }
 
         function connectWS() {
@@ -602,14 +658,23 @@
                         const d = msg.data;
                         if (d.symbol && (d.symbol.includes('Nifty 50') || d.symbol.includes('NIFTY 50'))) {
                             document.getElementById('ticker-nifty').innerText = d.ltp.toFixed(2);
-                            document.getElementById('chart-ltp').innerText = d.ltp.toFixed(2);
-                            updateChart(d.ltp);
                         }
                         if (d.symbol && d.symbol.includes('Bank')) {
                             document.getElementById('ticker-banknifty').innerText = d.ltp.toFixed(2);
                         }
                         if (d.symbol && d.symbol.includes('VIX')) {
                             document.getElementById('ticker-vix').innerText = d.ltp.toFixed(2);
+                        }
+                        
+                        // Update current chart if symbol matches or if it's the index proxy
+                        let isMatch = false;
+                        if (currentSymbol === 'NIFTY' && (d.symbol.includes('Nifty 50') || d.symbol === 'NSE_INDEX|Nifty 50')) isMatch = true;
+                        else if (currentSymbol === 'BANKNIFTY' && (d.symbol.includes('Bank') || d.symbol === 'NSE_INDEX|Nifty Bank')) isMatch = true;
+                        else if (d.symbol.includes(currentSymbol)) isMatch = true;
+                        
+                        if (isMatch) {
+                            document.getElementById('chart-ltp').innerText = d.ltp.toFixed(2);
+                            updateChart(d.ltp);
                         }
                     }
 
@@ -701,7 +766,21 @@
 
         function startAI() { fetch(`${API}/start`, { method: 'POST' }); addLog("AI Starting...", "sys"); }
         function stopAI() { fetch(`${API}/stop`, { method: 'POST' }); addLog("AI Stopping...", "sys"); }
-        function setMode(m) { fetch(`${API}/config?mode=${m}`, { method: 'POST' }); addLog(`Mode: ${m}`, "sys"); }
+        function setMode(m) { 
+            fetch(`${API}/config?mode=${m}`, { method: 'POST' }); 
+            addLog(`Mode: ${m}`, "sys"); 
+            
+            const btnPaper = document.getElementById('btn-paper');
+            const btnLive = document.getElementById('btn-live');
+            
+            if(m === 'PAPER') {
+                btnPaper.className = 'px-3 py-1 text-[10px] font-bold bg-yellow-500 text-black rounded';
+                btnLive.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
+            } else {
+                btnLive.className = 'px-3 py-1 text-[10px] font-bold bg-red-500 text-white rounded';
+                btnPaper.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
+            }
+        }
         function smartExecute() { addLog("Smart Exec Started", "sys"); }
         function executeOrder() { addLog("Executing...", "warn"); }
     </script>
