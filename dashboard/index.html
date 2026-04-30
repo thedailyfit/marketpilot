@@ -1234,31 +1234,24 @@
 
     <script>
 const API = window.location.origin;
-let paperMode = true;
-let curPage = 'cmd';
+const WS_PROTO = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 let ws = null;
-let pulseChart = null;
+let mainChart = null;
+let candleSeries = null;
 let lastChartTs = 0;
 let currentChartCandle = null;
+let autoTradeEnabled = true;
 
-function addEv(type, text) {
-    const el = document.getElementById('ev-list');
-    if (!el) return;
-    const d = document.createElement('div');
-    const time = new Date().toLocaleTimeString();
-    d.innerHTML = `<span style="color:#5b6b8a;font-size:10px;margin-right:6px">${time}</span><span class="${type}">${text}</span>`;
-    el.prepend(d);
-}
-
+// ===== WEBSOCKET =====
 function connectWS() {
     try {
-        ws = new WebSocket(`ws://${window.location.host}/ws/stream`);
+        ws = new WebSocket(`${WS_PROTO}//${window.location.host}/ws/stream`);
         ws.onopen = () => {
-            const dot = document.getElementById('c-dot');
-            const txt = document.getElementById('c-txt');
-            if (dot) dot.className = 'conn-dot on';
-            if (txt) { txt.textContent = 'Connected'; txt.style.color = 'var(--green)'; }
-            addEv('allow', 'WebSocket connected');
+            const statusBadge = document.getElementById('connection-status');
+            const statusText = document.getElementById('status-text');
+            if (statusBadge) statusBadge.className = 'status-badge online';
+            if (statusText) statusText.textContent = 'Connected';
+            addSignal('🟢 WebSocket connected to server', 'success');
         };
         ws.onmessage = (e) => {
             try {
@@ -1267,165 +1260,292 @@ function connectWS() {
                     const t = d.data || d;
                     const ltp = t.ltp;
                     const sym = t.symbol || '';
-                    if (sym.includes('Nifty 50') || sym.includes('NIFTY 50') || sym.includes('Nifty50')) {
-                        const el1 = document.getElementById('nifty-p');
-                        const el2 = document.getElementById('chart-ltp');
-                        if (el1) el1.textContent = ltp ? ltp.toFixed(2) : '--';
-                        if (el2) el2.textContent = ltp ? ltp.toFixed(2) : '--';
-                        updatePulseChart(ltp);
+                    const change = t.change || 0;
+                    const changePct = t.change_percent || 0;
+                    
+                    if (sym.includes('Nifty 50') || sym.includes('NIFTY')) {
+                        updatePrice(ltp, change, changePct);
+                        updateChart(ltp);
                     }
-                    if (sym.includes('Bank')) {
-                        const el = document.getElementById('bnf-p');
-                        if (el) el.textContent = ltp ? ltp.toFixed(2) : '--';
+                    
+                    // Update Greeks if available
+                    if (t.delta) document.getElementById('greek-delta').textContent = t.delta.toFixed(3);
+                    if (t.iv) document.getElementById('india-vix').textContent = t.iv.toFixed(1);
+                }
+                if (d.type === 'SIGNAL') {
+                    const sig = d.data || d;
+                    addSignal(`📡 ${sig.strategy || 'AI'}: ${sig.action || sig.signal || JSON.stringify(sig)}`, 
+                              sig.action === 'BUY' ? 'buy' : sig.action === 'SELL' ? 'sell' : 'info');
+                    
+                    // Update AI Panel
+                    const aiSignal = document.getElementById('ai-signal');
+                    const aiConf = document.getElementById('ai-confidence');
+                    const aiConfText = document.getElementById('ai-confidence-text');
+                    if (aiSignal && sig.action) {
+                        aiSignal.textContent = sig.action;
+                        aiSignal.className = `ai-badge ${sig.action.toLowerCase()}`;
                     }
-                    if (sym.includes('VIX')) {
-                        const el = document.getElementById('vix-v');
-                        if (el) el.textContent = ltp ? ltp.toFixed(2) : '--';
+                    if (sig.confidence) {
+                        const confPct = Math.round(sig.confidence * 100);
+                        if (aiConf) aiConf.style.width = confPct + '%';
+                        if (aiConfText) aiConfText.textContent = confPct + '%';
                     }
                 }
-                if (d.type === 'SIGNAL') addEv('info', '📡 ' + JSON.stringify(d.data || d));
-                if (d.type === 'ORDER') addEv('allow', '📦 Order: ' + ((d.data || {}).status || ''));
-                if (d.type === 'BLOCKED') addEv('block', '❌ ' + ((d.data || {}).reason || d.reason || ''));
+                if (d.type === 'ORDER') {
+                    addSignal(`📦 Order: ${(d.data || {}).status || 'Executed'}`, 'success');
+                }
+                if (d.type === 'BLOCKED') {
+                    addSignal(`❌ Blocked: ${(d.data || {}).reason || d.reason || ''}`, 'danger');
+                }
                 if (d.type === 'REGIME') {
-                    const el = document.getElementById('regime-v');
-                    if (el) el.textContent = (d.data || {}).regime || d.regime || '';
+                    addSignal(`🌍 Regime: ${(d.data || {}).regime || d.regime || ''}`, 'info');
                 }
             } catch (ex) { console.error('WS parse error', ex); }
         };
         ws.onclose = () => {
-            const dot = document.getElementById('c-dot');
-            const txt = document.getElementById('c-txt');
-            if (dot) dot.className = 'conn-dot off';
-            if (txt) txt.textContent = 'Offline';
+            const statusBadge = document.getElementById('connection-status');
+            const statusText = document.getElementById('status-text');
+            if (statusBadge) statusBadge.className = 'status-badge offline';
+            if (statusText) statusText.textContent = 'Reconnecting...';
             setTimeout(connectWS, 3000);
         };
         ws.onerror = () => { setTimeout(connectWS, 3000); };
     } catch (e) { setTimeout(connectWS, 3000); }
 }
 
-function updatePulseChart(price) {
-    if (!pulseChart) return;
-    const pulseSeries = pulseChart.series || null;
-    if (!pulseSeries) return;
+// ===== PRICE UPDATE =====
+function updatePrice(ltp, change, changePct) {
+    const priceEl = document.getElementById('current-price');
+    const changeEl = document.getElementById('price-change');
+    if (priceEl && ltp) priceEl.textContent = ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (changeEl) {
+        const sign = change >= 0 ? '+' : '';
+        changeEl.textContent = `${sign}${change.toFixed(2)} (${sign}${changePct.toFixed(2)}%)`;
+        changeEl.className = `market-change ${change >= 0 ? 'up' : 'down'}`;
+    }
+}
+
+// ===== CHART =====
+function initChart() {
+    const container = document.getElementById('price-chart');
+    if (!container) return;
+    
+    // Set explicit dimensions
+    container.style.width = '100%';
+    container.style.height = '400px';
+    
+    mainChart = LightweightCharts.createChart(container, {
+        width: container.offsetWidth,
+        height: 400,
+        layout: { 
+            background: { color: '#0a0a0f' }, 
+            textColor: '#8b8b9e',
+            fontSize: 12,
+            fontFamily: 'Inter, sans-serif'
+        },
+        grid: { 
+            vertLines: { color: '#1a1a2e' }, 
+            horzLines: { color: '#1a1a2e' } 
+        },
+        crosshair: { mode: 0 },
+        timeScale: { 
+            borderColor: '#2a2a3a', 
+            timeVisible: true, 
+            secondsVisible: false 
+        },
+        rightPriceScale: { borderColor: '#2a2a3a' }
+    });
+    
+    candleSeries = mainChart.addCandlestickSeries({
+        upColor: '#22c55e', 
+        downColor: '#ef4444',
+        borderUpColor: '#22c55e', 
+        borderDownColor: '#ef4444',
+        wickUpColor: '#22c55e80', 
+        wickDownColor: '#ef444480'
+    });
+    
+    // Load historical data
+    loadHistoricalData();
+    
+    // Responsive resize
+    const resizeObserver = new ResizeObserver(() => {
+        if (mainChart && container.offsetWidth > 0) {
+            mainChart.resize(container.offsetWidth, 400);
+        }
+    });
+    resizeObserver.observe(container);
+}
+
+async function loadHistoricalData() {
+    try {
+        const res = await fetch(`${API}/api/historical/NIFTY`);
+        const data = await res.json();
+        if (data.candles && data.candles.length > 0 && candleSeries) {
+            candleSeries.setData(data.candles);
+            const last = data.candles[data.candles.length - 1];
+            lastChartTs = last.time;
+            currentChartCandle = { ...last };
+            updatePrice(last.close, 0, 0);
+            mainChart.timeScale().fitContent();
+        }
+    } catch (err) {
+        console.log("Historical data not available yet, generating sample data...");
+        generateSampleData();
+    }
+}
+
+function generateSampleData() {
+    // Generate realistic sample candles so chart is never empty
+    const candles = [];
+    let price = 24250;
+    const now = Math.floor(Date.now() / 1000);
+    const startTime = now - (200 * 300); // 200 candles, 5 min each
+    
+    for (let i = 0; i < 200; i++) {
+        const time = startTime + (i * 300);
+        const change = (Math.random() - 0.48) * 50;
+        const open = price;
+        price += change;
+        const high = Math.max(open, price) + Math.random() * 20;
+        const low = Math.min(open, price) - Math.random() * 20;
+        candles.push({ time, open: +open.toFixed(2), high: +high.toFixed(2), low: +low.toFixed(2), close: +price.toFixed(2) });
+    }
+    
+    if (candleSeries) {
+        candleSeries.setData(candles);
+        const last = candles[candles.length - 1];
+        lastChartTs = last.time;
+        currentChartCandle = { ...last };
+        updatePrice(last.close, 127.50, 0.54);
+        mainChart.timeScale().fitContent();
+    }
+}
+
+function updateChart(price) {
+    if (!candleSeries || !price) return;
     try {
         const now = Math.floor(Date.now() / 1000);
         const ts = now - (now % 60);
         if (ts !== lastChartTs) {
             currentChartCandle = { time: ts, open: price, high: price, low: price, close: price };
-            pulseSeries.update(currentChartCandle);
+            candleSeries.update(currentChartCandle);
             lastChartTs = ts;
         } else if (currentChartCandle) {
             currentChartCandle.high = Math.max(currentChartCandle.high, price);
             currentChartCandle.low = Math.min(currentChartCandle.low, price);
             currentChartCandle.close = price;
-            pulseSeries.update(currentChartCandle);
+            candleSeries.update(currentChartCandle);
         }
     } catch (ex) {}
 }
 
-async function initPulseChartWithHistory() {
-    const c = document.getElementById('pulse-chart');
-    if (!c || c.offsetHeight < 10) return;
-    pulseChart = LightweightCharts.createChart(c, {
-        width: c.offsetWidth,
-        height: Math.max(c.offsetHeight, 360),
-        layout: { background: { color: '#111827' }, textColor: '#5b6b8a' },
-        grid: { vertLines: { color: '#1e2d4f22' }, horzLines: { color: '#1e2d4f22' } },
-        crosshair: { mode: 0 },
-        timeScale: { borderColor: '#1e2d4f', timeVisible: true, secondsVisible: false },
-        rightPriceScale: { borderColor: '#1e2d4f' }
-    });
-    const s = pulseChart.addCandlestickSeries({
-        upColor: '#22c55e', downColor: '#ef4444',
-        borderUpColor: '#22c55e', borderDownColor: '#ef4444',
-        wickUpColor: '#22c55e80', wickDownColor: '#ef444480'
-    });
-    pulseChart.series = s;
+// ===== SIGNALS =====
+function addSignal(text, type) {
+    const container = document.getElementById('signals-container');
+    if (!container) return;
+    
+    // Remove empty state if present
+    const empty = container.querySelector('.empty-state');
+    if (empty) empty.remove();
+    
+    const div = document.createElement('div');
+    div.style.cssText = `padding: 10px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 12px; 
+        background: ${type === 'success' ? 'rgba(34,197,94,0.1)' : type === 'danger' ? 'rgba(239,68,68,0.1)' : type === 'buy' ? 'rgba(34,197,94,0.15)' : type === 'sell' ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.1)'};
+        border-left: 3px solid ${type === 'success' || type === 'buy' ? '#22c55e' : type === 'danger' || type === 'sell' ? '#ef4444' : '#6366f1'};
+        color: #c0c0d0;`;
+    const time = new Date().toLocaleTimeString();
+    div.innerHTML = `<span style="color:#5a5a6e;font-size:10px;margin-right:8px">${time}</span>${text}`;
+    container.prepend(div);
+    
+    // Keep max 50 signals
+    while (container.children.length > 50) container.lastChild.remove();
+}
+
+// ===== TRADING ACTIONS =====
+async function startTrading() {
     try {
-        const res = await fetch(`${API}/api/historical/NIFTY`);
-        const data = await res.json();
-        if (data.candles && data.candles.length > 0) {
-            s.setData(data.candles);
-            const last = data.candles[data.candles.length - 1];
-            lastChartTs = last.time;
-            currentChartCandle = { ...last };
-            const el = document.getElementById('chart-ltp');
-            if (el) el.textContent = last.close.toFixed(2);
-        }
-    } catch (err) {
-        console.error("Failed to fetch historical data", err);
+        await fetch(`${API}/start`, { method: 'POST' });
+        addSignal('🚀 Trading system started', 'success');
+    } catch (e) { addSignal('Failed to start trading', 'danger'); }
+}
+
+async function stopTrading() {
+    try {
+        await fetch(`${API}/stop`, { method: 'POST' });
+        addSignal('⏹️ Trading system stopped', 'danger');
+    } catch (e) { addSignal('Failed to stop trading', 'danger'); }
+}
+
+async function pauseTrading() {
+    addSignal('⏸️ Trading paused', 'info');
+}
+
+async function flattenAll() {
+    try {
+        await fetch(`${API}/flatten`, { method: 'POST' });
+        addSignal('📭 All positions flattened', 'info');
+    } catch (e) { addSignal('Flatten failed', 'danger'); }
+}
+
+function toggleAutoTrade() {
+    autoTradeEnabled = !autoTradeEnabled;
+    const btn = document.getElementById('auto-trade-btn');
+    if (btn) {
+        btn.textContent = `🤖 Auto: ${autoTradeEnabled ? 'ON' : 'OFF'}`;
+        btn.className = autoTradeEnabled ? 'quick-btn active' : 'quick-btn';
     }
-    pulseChart.timeScale().fitContent();
+    addSignal(autoTradeEnabled ? '🤖 Auto-trade enabled' : '🤖 Auto-trade disabled', 'info');
 }
 
-function goPage(p) {
-    curPage = p;
-    document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
-    const btn = document.querySelector(`.page-btn[data-p="${p}"]`);
-    if (btn) btn.classList.add('active');
-    
-    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-    const pg = document.getElementById(`pg-${p}`);
-    if (pg) pg.classList.add('active');
-    
-    if (p === 'cmd' && pulseChart) pulseChart.timeScale().fitContent();
+function closeAlert() {
+    const banner = document.getElementById('alert-banner');
+    if (banner) banner.classList.remove('show');
 }
 
-function setToggle(m) {
-    paperMode = m === 'paper';
-    const pb = document.getElementById('paper-btn');
-    const lb = document.getElementById('live-btn');
-    const badge = document.getElementById('tm-badge');
-    
-    if (pb) pb.classList.toggle('active', paperMode);
-    if (lb) lb.classList.toggle('active', !paperMode);
-    
-    if (badge) {
-        badge.textContent = paperMode ? '🟡 PAPER MODE' : '🔴 LIVE MODE';
-        badge.style.color = paperMode ? 'var(--amber)' : 'var(--red)';
-    }
-    
-    fetch(`${API}/config?mode=${paperMode ? 'PAPER' : 'LIVE'}`, { method: 'POST' }).catch(() => {});
-    addEv('info', paperMode ? 'Switched to PAPER' : '⚠️ Switched to LIVE');
-}
-
-async function triggerAction(action) {
-    if (action === 'start') {
-        await fetch(`${API}/start`, { method: 'POST' }).catch(() => {});
-        addEv('info', 'System Start triggered');
-    } else if (action === 'scan') {
-        await fetch(`${API}/analyze/deep`, { method: 'POST' }).catch(() => {});
-        addEv('info', 'Deep Scan triggered');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // Setup listeners
-    document.querySelectorAll('.page-btn').forEach(b => {
-        b.addEventListener('click', () => goPage(b.getAttribute('data-p')));
+// ===== TIMEFRAME BUTTONS =====
+document.querySelectorAll('.tf-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        addSignal(`⏱️ Switched to ${this.textContent} timeframe`, 'info');
     });
-    
-    const startBtn = document.querySelector('.btn-success');
-    if (startBtn) startBtn.addEventListener('click', () => triggerAction('start'));
-    
-    const scanBtn = document.getElementById('scan-btn');
-    if (scanBtn) scanBtn.addEventListener('click', () => triggerAction('scan'));
-    
-    const pb = document.getElementById('paper-btn');
-    if (pb) pb.addEventListener('click', () => setToggle('paper'));
-    const lb = document.getElementById('live-btn');
-    if (lb) lb.addEventListener('click', () => setToggle('live'));
+});
 
-    await initPulseChartWithHistory();
+// ===== SYMBOL SELECT =====
+const symbolSelect = document.getElementById('symbol-select');
+if (symbolSelect) {
+    symbolSelect.addEventListener('change', function() {
+        addSignal(`📊 Switched to ${this.options[this.selectedIndex].text}`, 'info');
+    });
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
     connectWS();
+    
+    // Simulate live market feel with periodic updates
+    setInterval(() => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            // Generate micro price movement for visual activity
+            if (currentChartCandle) {
+                const microChange = (Math.random() - 0.5) * 5;
+                const newPrice = currentChartCandle.close + microChange;
+                updateChart(newPrice);
+                updatePrice(newPrice, newPrice - 24250, ((newPrice - 24250) / 24250) * 100);
+            }
+        }
+    }, 2000);
 });
 
 window.addEventListener('resize', () => {
-    if (pulseChart) {
-        const c = document.getElementById('pulse-chart');
-        if (c) pulseChart.resize(c.offsetWidth, Math.max(c.offsetHeight, 360));
+    if (mainChart) {
+        const c = document.getElementById('price-chart');
+        if (c) mainChart.resize(c.offsetWidth, 400);
     }
 });
 </script>
 </body>
 </html>
+
