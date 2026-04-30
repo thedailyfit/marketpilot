@@ -237,15 +237,17 @@ async def get_historical_data(symbol: str):
     from_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     
     try:
-        url = "https://api.upstox.com/v2/historical-candle/intraday"
-        url_daily = f"https://api.upstox.com/v2/historical-candle/{instrument_key}/5minute/{to_date}/{from_date}"
+        import urllib.parse
+        encoded_key = urllib.parse.quote(instrument_key, safe='')
+        
+        url_daily = f"https://api.upstox.com/v2/historical-candle/{encoded_key}/5minute/{to_date}/{from_date}"
         
         headers = {
             "Accept": "application/json",
         }
         
         # Try intraday first (today's data)
-        intraday_url = f"https://api.upstox.com/v2/historical-candle/intraday/{instrument_key}/5minute"
+        intraday_url = f"https://api.upstox.com/v2/historical-candle/intraday/{encoded_key}/5minute"
         res = req.get(intraday_url, headers=headers, timeout=10)
         
         candles = []
