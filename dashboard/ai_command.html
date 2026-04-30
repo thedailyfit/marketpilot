@@ -266,7 +266,7 @@
                     <div id="connection-status" class="text-red-500 font-bold text-xs">○ DISCONNECTED</div>
                 </div>
                 <div class="bg-[#111] px-3 py-1 rounded border border-[#333] text-right">
-                    <div class="text-[9px] text-gray-500 font-bold">CAPITAL</div>
+                    <div id="capital-label" class="text-[9px] text-gray-500 font-bold">PAPER BALANCE</div>
                     <div id="total-capital" class="text-white mono font-bold text-sm">₹1,00,000</div>
                 </div>
             </div>
@@ -471,9 +471,9 @@
 
                 <!-- Suggested Trades -->
                 <div class="bg-[#050a15] border border-blue-900 p-2 rounded mb-3">
-                    <div class="text-[9px] text-blue-400 font-bold mb-2 uppercase flex justify-between">
+                    <div class="text-[9px] text-blue-400 font-bold mb-2 uppercase flex justify-between items-center">
                         <span>🎯 Target Profit Agents</span>
-                        <span class="text-green-400 animate-pulse">Scanning...</span>
+                        <button onclick="addSuggestionsToWatchlist()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded text-[8px] animate-pulse">ADD TO WATCHLIST</button>
                     </div>
                     <div class="space-y-1" id="suggested-trades">
                         <div class="bg-black border border-[#222] p-1.5 rounded flex justify-between items-center cursor-pointer hover:border-blue-500 transition-colors">
@@ -631,6 +631,7 @@
             const list = document.getElementById('watchlist-items');
             const div = document.createElement('div');
             div.className = 'nav-item';
+            div.dataset.symbol = sym;
             div.innerHTML = `📊 ${sym}`;
             div.onclick = function() { changeChart(sym, this); };
             
@@ -639,6 +640,35 @@
             
             input.value = '';
             changeChart(sym, div);
+        }
+
+        function addSuggestionsToWatchlist() {
+            const suggestions = ['NIFTY 24000 CE', 'NIFTY 24100 CE', 'BANKNIFTY 54900 CE'];
+            let addedCount = 0;
+            
+            suggestions.forEach(sym => {
+                let exists = false;
+                document.querySelectorAll('#watchlist-items .nav-item').forEach(el => {
+                    if (el.dataset.symbol === sym) exists = true;
+                });
+                
+                if (!exists) {
+                    const list = document.getElementById('watchlist-items');
+                    const div = document.createElement('div');
+                    div.className = 'nav-item';
+                    div.dataset.symbol = sym;
+                    div.innerHTML = `📊 ${sym}`;
+                    div.onclick = function() { changeChart(sym, this); };
+                    list.appendChild(div);
+                    addedCount++;
+                }
+            });
+            
+            if (addedCount > 0) {
+                addLog(`AI added ${addedCount} trades to Watchlist`, "success");
+            } else {
+                addLog("Trades already in Watchlist", "info");
+            }
         }
 
         function connectWS() {
@@ -772,13 +802,21 @@
             
             const btnPaper = document.getElementById('btn-paper');
             const btnLive = document.getElementById('btn-live');
+            const capitalLabel = document.getElementById('capital-label');
+            const capitalVal = document.getElementById('total-capital');
             
             if(m === 'PAPER') {
                 btnPaper.className = 'px-3 py-1 text-[10px] font-bold bg-yellow-500 text-black rounded';
                 btnLive.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
+                capitalLabel.innerText = 'PAPER BALANCE';
+                capitalVal.innerText = '₹1,00,000';
             } else {
                 btnLive.className = 'px-3 py-1 text-[10px] font-bold bg-red-500 text-white rounded';
                 btnPaper.className = 'px-3 py-1 text-[10px] font-bold text-gray-500 hover:text-white';
+                capitalLabel.innerText = 'LIVE BALANCE';
+                capitalVal.innerText = 'Fetching...';
+                // Mock fetch for live broker balance
+                setTimeout(() => { capitalVal.innerText = '₹24,500.00'; }, 800);
             }
         }
         function smartExecute() { addLog("Smart Exec Started", "sys"); }
