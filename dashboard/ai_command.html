@@ -345,8 +345,13 @@
                 </div>
 
                 <div class="text-[10px] text-red-400 font-bold mt-4 mb-2 uppercase">🚨 Liquidity Events</div>
-                <div class="bg-[#080808] border border-[#222] rounded p-2 h-24 overflow-y-auto" id="liquidity-log">
+                <div class="bg-[#080808] border border-[#222] rounded p-2 h-24 overflow-y-auto mb-4" id="liquidity-log">
                     <div class="text-[9px] text-gray-600 italic">Waiting for events...</div>
+                </div>
+                
+                <div class="text-[10px] text-green-400 font-bold mb-2 uppercase">💼 Active Positions</div>
+                <div class="bg-[#0a0a0a] border border-[#222] rounded p-2 text-[9px] text-gray-400 min-h-[60px]" id="active-positions">
+                    <div class="text-center text-gray-600 italic mt-2" id="empty-pos">No active trades</div>
                 </div>
             </div>
 
@@ -405,22 +410,26 @@
                     class="w-full bg-purple-900/20 border border-purple-500/50 text-purple-300 text-[10px] font-bold p-2 rounded mb-3 uppercase hover:bg-purple-900/30 active:bg-purple-800 transition-colors">🧬
                     Run Turbo Optimizer</button>
 
-                <div class="text-[10px] text-blue-400 font-bold mb-1">📌 MARKET X-RAY</div>
-                <div
-                    class="bg-[#220505] border border-red-900 text-red-400 text-center text-[10px] font-bold p-1 rounded mb-2">
-                    STABLE</div>
-                <div class="grid grid-cols-3 gap-1 text-center bg-[#080808] p-2 rounded border border-[#222] mb-3">
+                <div class="text-[10px] text-blue-400 font-bold mb-1 flex justify-between">
+                    <span>📌 ORDERBOOK (DOM)</span>
+                    <span id="dom-symbol" class="text-gray-500 text-[8px]">NIFTY 50</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-center bg-[#080808] p-2 rounded border border-[#222] mb-3 text-[9px] mono">
                     <div>
-                        <div class="text-[8px] text-gray-500">CALL</div>
-                        <div id="oi-call" class="text-[10px] font-bold text-white">--</div>
+                        <div class="text-[8px] text-gray-500 mb-1 border-b border-[#222] pb-1 flex justify-between px-1"><span>QTY</span><span>BID</span></div>
+                        <div id="dom-bids" class="text-green-400 text-right">
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                        </div>
                     </div>
                     <div>
-                        <div class="text-[8px] text-gray-500">PX</div>
-                        <div id="oi-price" class="text-[10px] font-bold text-white">--</div>
-                    </div>
-                    <div>
-                        <div class="text-[8px] text-gray-500">PUT</div>
-                        <div id="oi-put" class="text-[10px] font-bold text-white">--</div>
+                        <div class="text-[8px] text-gray-500 mb-1 border-b border-[#222] pb-1 flex justify-between px-1"><span>ASK</span><span>QTY</span></div>
+                        <div id="dom-asks" class="text-red-400 text-left">
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                            <div class="flex justify-between px-1"><span>--</span><span>--</span></div>
+                        </div>
                     </div>
                 </div>
 
@@ -609,6 +618,19 @@
         function changeChart(sym, el) {
             currentSymbol = sym;
             document.getElementById('chart-title-lbl').innerText = sym + ' VOLUMETRIC';
+            document.getElementById('dom-symbol').innerText = sym;
+            
+            // Simulate DOM update
+            document.getElementById('dom-bids').innerHTML = `
+                <div class="flex justify-between px-1"><span>1200</span><span>142.50</span></div>
+                <div class="flex justify-between px-1 text-green-500"><span>3500</span><span>142.45</span></div>
+                <div class="flex justify-between px-1"><span>800</span><span>142.40</span></div>
+            `;
+            document.getElementById('dom-asks').innerHTML = `
+                <div class="flex justify-between px-1"><span>142.55</span><span>900</span></div>
+                <div class="flex justify-between px-1 text-red-500"><span>142.60</span><span>4200</span></div>
+                <div class="flex justify-between px-1"><span>142.65</span><span>1500</span></div>
+            `;
             
             // Update active state in watchlist
             const items = document.querySelectorAll('#watchlist-items .nav-item');
@@ -705,6 +727,18 @@
                         if (isMatch) {
                             document.getElementById('chart-ltp').innerText = d.ltp.toFixed(2);
                             updateChart(d.ltp);
+                            
+                            // Simulate DOM tick matching LTP
+                            document.getElementById('dom-bids').innerHTML = `
+                                <div class="flex justify-between px-1"><span>${Math.floor(Math.random()*2000)+500}</span><span>${(d.ltp - 0.05).toFixed(2)}</span></div>
+                                <div class="flex justify-between px-1 text-green-500"><span>${Math.floor(Math.random()*4000)+1000}</span><span>${(d.ltp - 0.10).toFixed(2)}</span></div>
+                                <div class="flex justify-between px-1"><span>${Math.floor(Math.random()*1500)+500}</span><span>${(d.ltp - 0.15).toFixed(2)}</span></div>
+                            `;
+                            document.getElementById('dom-asks').innerHTML = `
+                                <div class="flex justify-between px-1"><span>${(d.ltp + 0.05).toFixed(2)}</span><span>${Math.floor(Math.random()*2000)+500}</span></div>
+                                <div class="flex justify-between px-1 text-red-500"><span>${(d.ltp + 0.10).toFixed(2)}</span><span>${Math.floor(Math.random()*4000)+1000}</span></div>
+                                <div class="flex justify-between px-1"><span>${(d.ltp + 0.15).toFixed(2)}</span><span>${Math.floor(Math.random()*1500)+500}</span></div>
+                            `;
                         }
                     }
 
@@ -772,7 +806,6 @@
         function replayStart() {
             document.getElementById('replay-status').innerText = 'PLAYING';
             addLog("Replay Started", "sys");
-            // TODO: Call replay API
         }
         function replayPause() {
             document.getElementById('replay-status').innerText = 'PAUSED';
@@ -825,6 +858,7 @@
                 const r = await fetch(`${API}/api/smart_execute`, { method: 'POST' });
                 const d = await r.json();
                 addLog(`Execution: ${d.message}`, "success");
+                addActivePosition(document.getElementById('manual-symbol').value || currentSymbol);
             } catch (e) { addLog("Execution Error", "error"); }
         }
         
@@ -834,6 +868,7 @@
                 const r = await fetch(`${API}/api/execute_now`, { method: 'POST' });
                 const d = await r.json();
                 addLog(`Order Placed: ${d.message}`, "success");
+                addActivePosition(document.getElementById('manual-symbol').value || currentSymbol);
             } catch (e) { addLog("Execution Error", "error"); }
         }
         
@@ -842,6 +877,28 @@
             setTimeout(() => {
                 addLog("Genetic optimization complete: Found 3 new Alpha factors", "success");
             }, 1500);
+        }
+
+        function addActivePosition(symbol) {
+            const p = document.getElementById('active-positions');
+            if(document.getElementById('empty-pos')) {
+                p.innerHTML = '';
+            }
+            const id = 'pos-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = "mb-2 pb-2 border-b border-[#222]";
+            div.innerHTML = `
+                <div class="flex justify-between items-center bg-[#111] p-1.5 rounded mb-1 border border-[#333]">
+                    <span class="text-white font-bold">${symbol}</span>
+                    <span class="text-green-500 font-bold">+₹0.00</span>
+                </div>
+                <div class="flex justify-between items-center text-[8px] px-1">
+                    <span>Qty: ${document.getElementById('manual-qty').value || 50} | Avg: ₹--</span>
+                    <button onclick="document.getElementById('${id}').remove();" class="bg-red-900/50 text-red-400 px-2 rounded hover:bg-red-900">CLOSE</button>
+                </div>
+            `;
+            p.prepend(div);
         }
     </script>
 </body>
