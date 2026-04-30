@@ -493,6 +493,26 @@ async def execute_now():
     """Trigger immediate execution market order."""
     return JSONResponse(content={"status": "Executed", "message": "Market order sent to broker."})
 
+class ChatMessage(BaseModel):
+    message: str
+
+@app.post("/api/chat")
+async def process_chat(msg: ChatMessage):
+    """Process natural language command using Gemini Meta Agent."""
+    from core.intelligence.meta_agent import meta_agent
+    
+    # Collect mock/live context from engines for Gemini to read
+    # In a real setup, this pulls live vars from the supervisor's active memory
+    context = {
+        "nifty_ltp": 24000.50,
+        "gamma_exposure": "NEUTRAL",
+        "orderflow_delta": -1200,
+        "active_traps": ["BULL_TRAP_24100"]
+    }
+    
+    reply = await meta_agent.get_response(msg.message, context)
+    return JSONResponse(content={"status": "success", "reply": reply})
+
 @app.get("/api/funds")
 async def get_live_funds():
     """Fetch real-time account funds from Upstox."""

@@ -20,6 +20,9 @@ class SystemConfig:
     API_SECRET: str = ""
     ACCESS_TOKEN: str = ""
     REDIRECT_URI: str = "http://127.0.0.1:8000/callback"
+    
+    # AI Keys
+    GEMINI_API_KEY: str = ""
 
     def __post_init__(self):
         print("--- LOADING CONFIGURATION ---")
@@ -48,6 +51,7 @@ class SystemConfig:
             self.MODE = os.getenv("MODE", "PAPER")
             self.QUANTITY = int(os.getenv("QUANTITY", str(self.QUANTITY)))
             self.MAX_DAILY_LOSS = float(os.getenv("MAX_DAILY_LOSS", str(self.MAX_DAILY_LOSS)))
+            self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
             
             if not self.API_KEY:
                 print("CRITICAL: API_KEY is EMPTY after loading config.")

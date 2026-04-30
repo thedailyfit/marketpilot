@@ -393,10 +393,13 @@
                             class="text-[10px] font-black text-blue-400 uppercase">Singularity</span></div>
                     <div class="flex-1 bg-black border border-[#222] rounded p-2 text-[10px] mono text-gray-400 overflow-y-auto mb-1"
                         id="ai-chat-output">System Online. Orderflow Engines Active.</div>
-                    <div class="flex gap-1 h-6"><input type="text"
+                    <div class="flex gap-1 h-6">
+                        <input type="text" id="chat-input"
                             class="flex-1 bg-[#111] border border-[#333] rounded px-2 text-[10px] text-white"
-                            placeholder="Command..."><button
-                            class="bg-blue-600 text-white px-2 rounded text-[9px] font-bold">SEND</button></div>
+                            placeholder="Command..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                        <button onclick="sendChatMessage()" id="chat-send-btn"
+                            class="bg-blue-600 text-white px-2 rounded text-[9px] font-bold">SEND</button>
+                    </div>
                 </div>
                 <div class="log-panel" id="sys-logs"></div>
             </div>
@@ -911,6 +914,43 @@
                 </div>
             `;
             p.prepend(div);
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const output = document.getElementById('ai-chat-output');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            // Append user message
+            output.innerHTML += `<br><span class="text-gray-300">You: ${msg}</span>`;
+            input.value = '';
+            output.scrollTop = output.scrollHeight;
+            
+            try {
+                const btn = document.getElementById('chat-send-btn');
+                btn.innerText = '...';
+                
+                const r = await fetch(`${API}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                
+                const data = await r.json();
+                btn.innerText = 'SEND';
+                
+                if(data.status === 'success') {
+                    output.innerHTML += `<br><span class="text-blue-400">AI: ${data.reply}</span>`;
+                } else {
+                    output.innerHTML += `<br><span class="text-red-400">Error connecting to AI.</span>`;
+                }
+                output.scrollTop = output.scrollHeight;
+                
+            } catch(e) {
+                document.getElementById('chat-send-btn').innerText = 'SEND';
+                output.innerHTML += `<br><span class="text-red-400">Network Error.</span>`;
+            }
         }
     </script>
 </body>

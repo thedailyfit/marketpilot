@@ -10,3 +10,4 @@ python-dotenv
 jinja2
 scipy
 websocket-client
+google-generativeai
