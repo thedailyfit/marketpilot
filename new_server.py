@@ -1613,8 +1613,8 @@ async def update_config(
 async def start_system():
     print("!!! RECEIVED START COMMAND !!!")
     if not supervisor.is_running:
-        await supervisor.start()
-    return {"status": "Started"}
+        asyncio.create_task(supervisor.start())
+    return {"status": "Starting engines... Please wait."}
 
 @app.post("/execute")
 async def execute_manual(symbol: str, action: str, quantity: int, price: float = 0.0, sl_pct: float = 1.0, tp_pct: float = 2.0):
@@ -1646,9 +1646,9 @@ def analyze_strategy():
 @app.get("/history")
 def get_historical_data_legacy(symbol: str):
     """Returns historical candles for charting."""
-    if supervisor.is_running:
-        return supervisor.market_agent.get_history(symbol)
-    return []
+    if supervisor.is_running and hasattr(supervisor, 'market_agent'):
+        return {"candles": supervisor.market_agent.get_history(symbol)}
+    return {"candles": []}
 
 @app.get("/api/orders/history")
 def get_order_history():

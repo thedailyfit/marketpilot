@@ -847,12 +847,24 @@
         }
 
         async function startAI() { 
-            addLog("AI Starting...", "sys"); 
+            addLog("AI Engines Booting...", "sys"); 
+            document.getElementById('sys-ready-dot').className = 'w-2 h-2 rounded-full bg-yellow-500 animate-pulse';
             try {
                 const r = await fetch(`${API}/start`, { method: 'POST' });
                 const d = await r.json();
-                addLog(`AI Status: ${d.status}`, "success");
-                document.getElementById('sys-ready-dot').className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                addLog(`Server: ${d.status}`, "sys");
+                
+                const poll = setInterval(async () => {
+                    try {
+                        const res = await fetch(`${API}/analyze/deep`, { method: 'POST' });
+                        const dat = await res.json();
+                        if(dat.macro_scan && !dat.macro_scan.recommendation.includes("OFFLINE")) {
+                            clearInterval(poll);
+                            addLog("AI Agents Online and Ready", "success");
+                            document.getElementById('sys-ready-dot').className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                        }
+                    } catch(e) {}
+                }, 2000);
             } catch(e) {
                 addLog("Error starting AI", "error");
             }
@@ -863,7 +875,7 @@
             try {
                 const r = await fetch(`${API}/stop`, { method: 'POST' });
                 const d = await r.json();
-                addLog(`AI Status: ${d.status}`, "warn");
+                addLog(`Server: ${d.status}`, "warn");
                 document.getElementById('sys-ready-dot').className = 'w-2 h-2 rounded-full bg-red-500';
             } catch(e) {
                 addLog("Error stopping AI", "error");
