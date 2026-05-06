@@ -592,11 +592,14 @@ async def get_live_funds():
         client = upstox_client.ApiClient(config)
         user_api = upstox_client.UserApi(client)
         
-        resp = user_api.get_user_fund_margin(segment="SEC")
+        resp = user_api.get_user_fund_margin(api_version="2.0", segment="SEC")
         
-        if resp and resp.data and hasattr(resp.data, 'equity'):
-            available = resp.data.equity.available_margin
-            return JSONResponse(content={"status": "success", "balance": float(available)})
+        if resp:
+            resp_dict = resp.to_dict()
+            if 'data' in resp_dict and 'equity' in resp_dict['data']:
+                available = resp_dict['data']['equity'].get('available_margin', 0.0)
+                return JSONResponse(content={"status": "success", "balance": float(available)})
+                
         return JSONResponse(content={"status": "error", "message": "Could not parse balance", "balance": 0.0})
     except Exception as e:
         logger.error(f"Funds fetch error: {e}")
