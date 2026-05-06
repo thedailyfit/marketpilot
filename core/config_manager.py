@@ -3,7 +3,7 @@ from dataclasses import dataclass
 @dataclass
 class SystemConfig:
     MODE: str = "PAPER" # PAPER or LIVE
-    TRADING_SYMBOL: str = "NSE_FO|NIFTY23OCT19500CE"
+    TRADING_SYMBOL: str = "NSE_INDEX|Nifty 50"
     QUANTITY: int = 50
     LOT_SIZE: int = 50
     

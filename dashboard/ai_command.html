@@ -932,7 +932,7 @@
                 const r = await fetch(`${API}/api/smart_execute`, { method: 'POST' });
                 const d = await r.json();
                 addLog(`Execution: ${d.message}`, "success");
-                addActivePosition(document.getElementById('manual-symbol').value || currentSymbol);
+                addActivePosition(d.executed_symbol || document.getElementById('manual-symbol').value || currentSymbol);
             } catch (e) { addLog("Execution Error", "error"); }
         }
         
@@ -942,7 +942,7 @@
                 const r = await fetch(`${API}/api/execute_now`, { method: 'POST' });
                 const d = await r.json();
                 addLog(`Order Placed: ${d.message}`, "success");
-                addActivePosition(document.getElementById('manual-symbol').value || currentSymbol);
+                addActivePosition(d.executed_symbol || document.getElementById('manual-symbol').value || currentSymbol);
             } catch (e) { addLog("Execution Error", "error"); }
         }
         
