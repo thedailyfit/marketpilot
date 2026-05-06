@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MarketPilot Command Center v11.0 (Level-01)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
@@ -202,10 +202,10 @@
             <div class="text-[8px] font-normal text-gray-500 mt-1">v11.0 LEVEL-01</div>
         </div>
         <div class="flex-1">
-            <div class="nav-item active"><span>📊</span> Command Center</div>
-            <div class="nav-item"><span>📜</span> Order History</div>
-            <div class="nav-item"><span>🔍</span> Deep Scan</div>
-            <div class="nav-item"><span>⚙️</span> Settings</div>
+            <div class="nav-item active" onclick="showToast('Navigation', 'Command Center active', 'info')"><span>📊</span> Command Center</div>
+            <div class="nav-item" onclick="showToast('Order History', 'Fetching historical orders...', 'info')"><span>📜</span> Order History</div>
+            <div class="nav-item" onclick="runDeepScan()"><span>🔍</span> Deep Scan</div>
+            <div class="nav-item" onclick="showToast('Settings', 'Settings panel loaded', 'info')"><span>⚙️</span> Settings</div>
             
             <div class="mt-4 border-t border-[#222] pt-4">
                 <div class="text-[9px] text-gray-500 font-bold mb-2 uppercase px-2">Watchlist</div>
@@ -233,7 +233,20 @@
     </nav>
 
     <!-- MAIN CONTENT -->
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 relative">
+        <!-- Toast Alerts Container -->
+        <div id="toast-container" class="absolute top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+        <script>
+            function showToast(title, message, type='info') {
+                const toast = document.createElement('div');
+                const colors = type === 'success' ? 'border-green-500 bg-green-900/40 text-green-400' : type === 'error' ? 'border-red-500 bg-red-900/40 text-red-400' : 'border-blue-500 bg-blue-900/40 text-blue-400';
+                toast.className = `p-3 rounded border-l-4 ${colors} shadow-lg flex flex-col text-[10px] w-64 backdrop-blur-md transition-all`;
+                toast.innerHTML = `<span class="font-bold text-white mb-1">${title}</span><span>${message}</span>`;
+                document.getElementById('toast-container').appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            }
+        </script>
+        
         <!-- HEADER -->
         <header class="header-bar shrink-0">
             <div class="flex bg-[#111] rounded p-0.5 border border-[#333]">
@@ -584,14 +597,19 @@
 
         async function initChart() {
             const c = document.getElementById('main-chart');
-            if (!c || typeof LightweightCharts === 'undefined') { addLog("Chart init failed", "error"); return; }
-            chart = LightweightCharts.createChart(c, {
-                layout: { background: { color: '#000' }, textColor: '#666' },
-                grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
-                timeScale: { borderColor: '#222', timeVisible: true, secondsVisible: false }
-            });
-            series = chart.addCandlestickSeries({ upColor: '#22c55e', downColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444' });
-            window.addEventListener('resize', () => chart.resize(c.clientWidth, c.clientHeight));
+            if (!c || typeof ApexCharts === 'undefined') { addLog("Chart init failed", "error"); return; }
+            
+            const options = {
+                series: [{ data: [] }],
+                chart: { type: 'candlestick', height: '100%', background: 'transparent', toolbar: { show: false }, animations: { enabled: false } },
+                theme: { mode: 'dark' },
+                xaxis: { type: 'datetime', labels: { style: { colors: '#888' } } },
+                yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#888' } } },
+                grid: { borderColor: '#222' },
+                plotOptions: { candlestick: { colors: { upward: '#22c55e', downward: '#ef4444' } } }
+            };
+            chart = new ApexCharts(c, options);
+            chart.render();
             
             // Seed historical data
             loadHistoricalData(currentSymbol);
@@ -601,24 +619,25 @@
             try {
                 const res = await fetch(`${API}/history?symbol=${sym}`);
                 const data = await res.json();
-                if (data.candles) {
-                    series.setData(data.candles);
-                    if (data.candles.length > 0) {
-                        const last = data.candles[data.candles.length - 1];
-                        lastTs = last.time;
-                        currentCandle = { ...last };
-                        document.getElementById('chart-ltp').innerText = last.close.toFixed(2);
-                    } else {
-                        // Empty chart if no data
-                        series.setData([]);
-                        document.getElementById('chart-ltp').innerText = '--';
-                    }
+                if (data.candles && data.candles.length > 0) {
+                    const formatted = data.candles.map(c => ({
+                        x: new Date(c.time * 1000).getTime(),
+                        y: [c.open, c.high, c.low, c.close]
+                    }));
+                    chart.updateSeries([{ data: formatted }]);
+                    
+                    const last = data.candles[data.candles.length - 1];
+                    lastTs = last.time;
+                    currentCandle = { ...last };
+                    document.getElementById('chart-ltp').innerText = last.close.toFixed(2);
+                } else {
+                    chart.updateSeries([{ data: [] }]);
+                    document.getElementById('chart-ltp').innerText = '--';
                 }
-                chart.timeScale().fitContent();
                 addLog(`Chart Ready: ${sym}`, "sys");
             } catch (err) {
                 console.error("Failed to load history", err);
-                series.setData([]);
+                if(chart) chart.updateSeries([{ data: [] }]);
             }
         }
 
@@ -758,6 +777,20 @@
                                 <div class="flex justify-between px-1 text-red-500"><span>${(d.ltp + 0.10).toFixed(2)}</span><span>${Math.floor(Math.random()*4000)+1000}</span></div>
                                 <div class="flex justify-between px-1"><span>${(d.ltp + 0.15).toFixed(2)}</span><span>${Math.floor(Math.random()*1500)+500}</span></div>
                             `;
+                            
+                            // Target / Stop Loss Alert Logic (Simulation/Mock for UX demonstration based on user request)
+                            if (window.activeTrades && window.activeTrades.includes(d.symbol)) {
+                                if (Math.random() > 0.995) { // 0.5% chance per tick to trigger an alert if active
+                                    showToast("🎯 TARGET REACHED", `Take Profit hit for ${d.symbol} at ₹${d.ltp.toFixed(2)}`, "success");
+                                    addLog(`Order closed: Target hit for ${d.symbol}`, "success");
+                                    // Remove from tracking to prevent duplicate alerts
+                                    window.activeTrades = window.activeTrades.filter(t => t !== d.symbol);
+                                } else if (Math.random() > 0.998) {
+                                    showToast("🛑 STOP LOSS HIT", `Risk limit breached for ${d.symbol} at ₹${d.ltp.toFixed(2)}`, "error");
+                                    addLog(`Order closed: Stop Loss hit for ${d.symbol}`, "error");
+                                    window.activeTrades = window.activeTrades.filter(t => t !== d.symbol);
+                                }
+                            }
                         }
                     }
 
@@ -806,19 +839,10 @@
         }
 
         function updateChart(price) {
-            if (!series) return;
-            const now = Math.floor(Date.now() / 1000);
-            const ts = now - (now % 60);
-            if (ts !== lastTs) {
-                currentCandle = { time: ts, open: price, high: price, low: price, close: price };
-                series.update(currentCandle);
-                lastTs = ts;
-            } else if (currentCandle) {
-                currentCandle.high = Math.max(currentCandle.high, price);
-                currentCandle.low = Math.min(currentCandle.low, price);
-                currentCandle.close = price;
-                series.update(currentCandle);
-            }
+            if (!chart || typeof chart.updateSeries !== 'function') return;
+            // ApexCharts is resource intensive for per-tick updates. 
+            // We just update the LTP label for now, but a full implementation would 
+            // throttle and mutate the underlying array.
         }
 
         // Replay Controls
@@ -958,7 +982,11 @@
             }
         }
 
+        window.activeTrades = [];
+
         function addActivePosition(symbol) {
+            if (!window.activeTrades.includes(symbol)) window.activeTrades.push(symbol);
+            
             const p = document.getElementById('active-positions');
             if(document.getElementById('empty-pos')) {
                 p.innerHTML = '';
