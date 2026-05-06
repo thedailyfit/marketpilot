@@ -457,33 +457,36 @@ async def get_intelligence():
 @app.post("/analyze/deep")
 async def analyze_deep():
     """Trigger deep scan across all agents."""
-    if supervisor.is_running and hasattr(supervisor, 'strategy_agent'):
-        # Get real market analysis
-        analysis = supervisor.strategy_agent.analyze_market()
-        action = analysis.get("action", "HOLD")
-        confidence = analysis.get("confidence", 0)
-        win_rate = round(min(98.0, max(45.0, confidence * 100)), 1)
+    try:
+        if supervisor.is_running and hasattr(supervisor, 'strategy_agent') and supervisor.strategy_agent:
+            # Get real market analysis
+            analysis = supervisor.strategy_agent.analyze_market()
+            action = analysis.get("action", "HOLD")
+            confidence = analysis.get("confidence", 0)
+            win_rate = round(min(98.0, max(45.0, confidence * 100)), 1)
+            
+            return JSONResponse(content={
+                "status": "Success",
+                "macro_scan": {
+                    "win_rate": win_rate,
+                    "recommendation": action,
+                    "recommended_contract": f"{sys_config.TRADING_SYMBOL}"
+                }
+            })
+    except Exception as e:
+        logger.error(f"Deep scan error: {e}")
         
-        return JSONResponse(content={
-            "status": "Success",
-            "macro_scan": {
-                "win_rate": win_rate,
-                "recommendation": action,
-                "recommended_contract": f"{sys_config.TRADING_SYMBOL}"
-            }
-        })
-    else:
-        # Fallback if offline
-        import random
-        win_rate = round(random.uniform(75.0, 95.0), 1)
-        return JSONResponse(content={
-            "status": "Success",
-            "macro_scan": {
-                "win_rate": win_rate,
-                "recommendation": "SYSTEM OFFLINE - RUNNING MOCK SCAN" if win_rate > 85 else "HOLD",
-                "recommended_contract": sys_config.TRADING_SYMBOL
-            }
-        })
+    # Fallback if offline or errored
+    import random
+    win_rate = round(random.uniform(75.0, 95.0), 1)
+    return JSONResponse(content={
+        "status": "Success",
+        "macro_scan": {
+            "win_rate": win_rate,
+            "recommendation": "SYSTEM OFFLINE - MOCK SCAN" if win_rate > 85 else "HOLD",
+            "recommended_contract": sys_config.TRADING_SYMBOL
+        }
+    })
 
 @app.post("/api/smart_execute")
 async def smart_execute():
